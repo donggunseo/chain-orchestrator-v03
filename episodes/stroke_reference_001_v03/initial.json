@@ -1,0 +1,10 @@
+{
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "age": 68,
+  "sex": "F",
+  "bed": "소생실-02",
+  "arrival_time": "2026-10-06T15:12:41+09:00"
+}

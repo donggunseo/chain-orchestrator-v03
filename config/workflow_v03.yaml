@@ -1,0 +1,297 @@
+workflow_id: acute-stroke-ivt-mvp
+site_id: HYUMC_GURI
+initial_state: S0
+states:
+  S0:
+    name: ED_REGISTERED
+    on_enter: []
+    on_event:
+    - when:
+        event_type: CLINICAL_DOCUMENT_UPDATED
+        payload.document_type: ED_INITIAL_NOTE
+      do:
+      - authorize_and_run: stroke_screening
+        mode: screening
+    - when:
+        event_type: AGENT_RESULT_AVAILABLE
+        agent: stroke_screening
+        result.screening_result: POSITIVE
+        mode: screening
+      transition: S1
+    - when:
+        event_type: AGENT_RESULT_AVAILABLE
+        agent: stroke_screening
+        result.screening_result: NEGATIVE
+        mode: screening
+      transition: S0X
+  S1:
+    name: ACUTE_STROKE_SUSPECTED
+    on_enter:
+    - notify:
+        template: CT_ROOM_PREALERT_L1
+        channel: CONSOLE
+        recipient: CT_ROOM_BOARD
+    - notify:
+        template: NURSE_S1_PREP
+        channel: CONSOLE
+        recipient: NURSE_STATION
+    - notify:
+        template: NEURO_ONCALL_S1
+        channel: CONSOLE
+        recipient: SMS_GATEWAY
+    - request_hitl: HITL_1_PROCEED_TO_CT
+    on_event:
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_1_PROCEED_TO_CT
+        payload.decision: PROCEED_TO_CT
+      transition: S2
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_1_PROCEED_TO_CT
+        payload.decision: NOT_STROKE_PATHWAY
+      transition: S1X
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_1_PROCEED_TO_CT
+        payload.decision: DEFER
+      do:
+      - record_reason
+      - re_request_hitl_after_min: 10
+    timeout:
+      after_min: 20
+      do:
+      - notify:
+          template: HITL1_OVERDUE
+          channel: CONSOLE
+          recipient: NURSE_STATION
+  S2:
+    name: STROKE_CT_CONFIRMED
+    on_enter:
+    - notify:
+        template: CT_ROOM_CONFIRMED_L2
+        channel: CONSOLE
+        recipient: CT_ROOM_BOARD
+    - notify:
+        template: NEURO_ONCALL_S2
+        channel: CONSOLE
+        recipient: SMS_GATEWAY
+    - authorize_and_run: tpa_decision_support
+      mode: interim
+    on_event:
+    - when:
+        event_type: IMAGING_STUDY_COMPLETED
+        payload.study_type: NCCT_HEAD
+      guard:
+        all:
+        - exists: $episode.context.ct_order_id
+        - eq:
+          - $payload.order_id
+          - $episode.context.ct_order_id
+      transition: S2_1
+    - when:
+        event_type:
+        - ORDER_PLACED
+        - CLINICAL_DOCUMENT_UPDATED
+        - OBSERVATION_RECORDED
+        - LAB_RESULTED
+        - IMAGING_STUDY_COMPLETED
+        - SOURCE_CORRECTED
+        - SOURCE_ERROR_REPORTED
+        - SOURCE_RETRACTED
+        - SOURCE_CONFLICT_DECLARED
+      do:
+      - authorize_and_run: tpa_decision_support
+        mode: interim
+    timeout:
+      after_min: 30
+      do:
+      - notify:
+          template: CT_OVERDUE
+          channel: CONSOLE
+          recipient: NURSE_STATION
+  S2_1:
+    name: CT_COMPLETED
+    on_enter:
+    - notify:
+        template: NEURO_ONCALL_CT_DONE
+        channel: CONSOLE
+        recipient: SMS_GATEWAY
+    - authorize_and_run: tpa_decision_support
+      mode: final
+    - request_hitl: HITL_2_THROMBOLYSIS
+      after: tpa_decision_support.final
+    on_event:
+    - when:
+        event_type:
+        - ORDER_PLACED
+        - CLINICAL_DOCUMENT_UPDATED
+        - OBSERVATION_RECORDED
+        - LAB_RESULTED
+        - IMAGING_STUDY_COMPLETED
+        - SOURCE_CORRECTED
+        - SOURCE_ERROR_REPORTED
+        - SOURCE_RETRACTED
+        - SOURCE_CONFLICT_DECLARED
+      do:
+      - authorize_and_run: tpa_decision_support
+        mode: final
+      - request_hitl: HITL_2_THROMBOLYSIS
+        after: tpa_decision_support.final
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_2_THROMBOLYSIS
+        payload.decision: THROMBOLYSIS_YES
+      transition: S3
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_2_THROMBOLYSIS
+        payload.decision: THROMBOLYSIS_NO
+      transition: S3N
+    - when:
+        event_type: HITL_DECISION
+        payload.checkpoint: HITL_2_THROMBOLYSIS
+        payload.decision: HOLD
+      do:
+      - record_hold_reason
+      - re_request_hitl_after_min: 10
+    timeout:
+      after_min: 10
+      do:
+      - notify:
+          template: HITL2_OVERDUE
+          channel: CONSOLE
+          recipient: SMS_GATEWAY
+  S3:
+    name: THROMBOLYSIS_PLANNED
+    terminal: true
+    on_enter:
+    - notify:
+        template: NURSE_S3_THROMBOLYSIS_PLANNED
+        channel: CONSOLE
+        recipient: NURSE_STATION
+    - notify:
+        template: EM_S3_THROMBOLYSIS_PLANNED
+        channel: CONSOLE
+        recipient: EHR_MESSENGER
+    - notify:
+        template: NEURO_S3_CONFIRM
+        channel: CONSOLE
+        recipient: SMS_GATEWAY
+    - seal_audit_trail
+  S3N:
+    name: THROMBOLYSIS_NOT_PLANNED
+    terminal: true
+    on_enter:
+    - seal_audit_trail
+  S1X:
+    name: NOT_STROKE_PATHWAY
+    terminal: true
+    on_enter:
+    - seal_audit_trail
+  S0X:
+    name: SCREEN_NEGATIVE_CLOSED
+    terminal: true
+    on_enter:
+    - seal_audit_trail
+version: 0.3-step5
+subscriptions:
+- event_type: ED_ENCOUNTER_CREATED
+- event_type: CLINICAL_DOCUMENT_UPDATED
+- event_type: OBSERVATION_RECORDED
+- event_type: ORDER_PLACED
+- event_type: LAB_RESULTED
+- event_type: IMAGING_STUDY_COMPLETED
+- event_type: MANUAL_DATA_AVAILABLE
+- event_type: SOURCE_CORRECTED
+- event_type: SOURCE_ERROR_REPORTED
+- event_type: SOURCE_RETRACTED
+- event_type: SOURCE_CONFLICT_DECLARED
+context_service:
+  agent: clinical_summary
+  mode: context
+  available_states: '*'
+agents:
+  stroke_screening:
+    timeout_s: 30
+    needs_context: true
+    scopes:
+      screening:
+      - document:DOC-2610060412
+      - lkw
+      - glucose
+    outputs:
+      screening:
+      - screening_result
+      - mock_only
+      - basis
+  clinical_summary:
+    timeout_s: 120
+    needs_context: false
+    scopes:
+      context:
+      - age
+    outputs:
+      context:
+      - structured_context
+      - missing_information
+      - cache
+  tpa_decision_support:
+    timeout_s: 30
+    needs_context: true
+    scopes:
+      interim: &id001
+      - lkw
+      - ncct_completed
+      - ncct_order_id
+      - ct_order_id
+      - platelet_count
+      - inr
+      - anticoagulant
+      - weight_kg
+      - nihss
+      - sbp
+      - dbp
+      - glucose
+      - age
+      final: *id001
+    outputs:
+      interim:
+      - mode
+      - evidence_package
+      - assessment
+      - mock_only
+      final:
+      - mode
+      - evidence_package
+      - assessment
+      - mock_only
+hitl_checkpoints:
+  HITL_1_PROCEED_TO_CT:
+    roles:
+    - EM_PHYSICIAN
+    - NEUROLOGIST
+    options:
+    - PROCEED_TO_CT
+    - NOT_STROKE_PATHWAY
+    - DEFER
+    required_confirmations: []
+    confirmations_on_decisions: []
+    after: stroke_screening.screening
+    question: 급성 뇌졸중 의심(S1). 응급 Stroke CT를 진행하시겠습니까?
+  HITL_2_THROMBOLYSIS:
+    roles:
+    - NEUROLOGIST
+    options:
+    - THROMBOLYSIS_YES
+    - THROMBOLYSIS_NO
+    - HOLD
+    required_confirmations:
+    - NCCT_NO_HEMORRHAGE_PHYSICIAN_READ
+    - LKW_RECONFIRMED_WITH_FAMILY
+    - BP_RECHECK_BELOW_185_110
+    - NO_ANTICOAGULANT_RECONFIRMED
+    confirmations_on_decisions:
+    - THROMBOLYSIS_YES
+    after: tpa_decision_support.final
+    question: 현재 고정된 tPA/TNK 근거묶음을 확인하고 IV thrombolysis 시행 여부를 결정해 주십시오.
