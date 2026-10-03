@@ -1,0 +1,176 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "LIS",
+    "record_id": "LAB-2610060917",
+    "version": 1
+  },
+  "event_type": "LAB_RESULTED",
+  "source_time": "2026-10-06T15:33:05+09:00",
+  "source_sequence_no": 9,
+  "payload": {
+    "panel_id": "LAB-2610060917",
+    "panel": "CBC",
+    "order_id": "ORD-2610060917",
+    "result_status": "FINAL",
+    "specimen_collected_time": "2026-10-06T15:16:50+09:00",
+    "resulted_time": "2026-10-06T15:33:05+09:00",
+    "results": [
+      {
+        "concept": "WBC",
+        "code": {
+          "system": "LOINC",
+          "code": "6690-2"
+        },
+        "value": 8900,
+        "unit": "/uL",
+        "reference_range": {
+          "low": 4000,
+          "high": 10000
+        },
+        "flag": "N"
+      },
+      {
+        "concept": "HEMOGLOBIN",
+        "code": {
+          "system": "LOINC",
+          "code": "718-7"
+        },
+        "value": 13.1,
+        "unit": "g/dL",
+        "reference_range": {
+          "low": 12.0,
+          "high": 16.0
+        },
+        "flag": "N"
+      },
+      {
+        "concept": "PLATELET_COUNT",
+        "code": {
+          "system": "LOINC",
+          "code": "777-3"
+        },
+        "value": 214000,
+        "unit": "/uL",
+        "reference_range": {
+          "low": 150000,
+          "high": 400000
+        },
+        "flag": "N"
+      }
+    ],
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/lab-results?panel_id=LAB-2610060917"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004994",
+      "event_type": "LAB_RESULTED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "LIS",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 9,
+      "source_event_time": "2026-10-06T15:33:05+09:00",
+      "emitted_time": "2026-10-06T15:33:07+09:00",
+      "source_ref": {
+        "system": "LIS",
+        "record_type": "LAB_RESULT",
+        "record_id": "LAB-2610060917",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-09"
+      },
+      "payload": {
+        "panel_id": "LAB-2610060917",
+        "panel": "CBC",
+        "order_id": "ORD-2610060917",
+        "result_status": "FINAL",
+        "specimen_collected_time": "2026-10-06T15:16:50+09:00",
+        "resulted_time": "2026-10-06T15:33:05+09:00",
+        "results": [
+          {
+            "concept": "WBC",
+            "code": {
+              "system": "LOINC",
+              "code": "6690-2"
+            },
+            "value": 8900,
+            "unit": "/uL",
+            "reference_range": {
+              "low": 4000,
+              "high": 10000
+            },
+            "flag": "N"
+          },
+          {
+            "concept": "HEMOGLOBIN",
+            "code": {
+              "system": "LOINC",
+              "code": "718-7"
+            },
+            "value": 13.1,
+            "unit": "g/dL",
+            "reference_range": {
+              "low": 12.0,
+              "high": 16.0
+            },
+            "flag": "N"
+          },
+          {
+            "concept": "PLATELET_COUNT",
+            "code": {
+              "system": "LOINC",
+              "code": "777-3"
+            },
+            "value": 214000,
+            "unit": "/uL",
+            "reference_range": {
+              "low": 150000,
+              "high": 400000
+            },
+            "flag": "N"
+          }
+        ],
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/lab-results?panel_id=LAB-2610060917"
+      },
+      "integrity": {
+        "payload_hash": "sha256:d31dda2e311eca3dc315316f869237681688da8ae3af4e4abd3df2d1dc048a44",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "wbc": {
+      "value": 8900,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:33:05+09:00",
+      "unit": "/uL",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "hemoglobin": {
+      "value": 13.1,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:33:05+09:00",
+      "unit": "g/dL",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "platelet_count": {
+      "value": 214000,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:33:05+09:00",
+      "unit": "/uL",
+      "confirmation_status": "UNCONFIRMED"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:ab8dbaa579ece779a3a516eb66f7aebb04d35c9589f66a52f6beebdaf3ff3480"
+}

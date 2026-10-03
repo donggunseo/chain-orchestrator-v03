@@ -1,13 +1,12 @@
-# CHAIN integration delivery repository: track only the reviewed delivery files.
-# tests/tools/archive/output/reference/simulator/examples/docs and local settings
-# remain on this computer; they are not included in commits or fresh clones.
-# Add new runtime/backend/plugin files explicitly here before staging them.
+# CHAIN core and standalone demo: track the reviewed code and synthetic assets.
+# tests/tools/archive/output/reference/examples/docs and local settings stay local.
+# Add new core/demo/backend/plugin files explicitly here before staging them.
 # Current Agent fixture files stay until real Agent integration removes their pins.
 
 # Ignore everything unless explicitly allowed below.
 *
 
-# Traverse only delivery directories.
+# Traverse only reviewed directories.
 !/chain_demo/
 !/config/
 !/episodes/
@@ -18,7 +17,7 @@
 !/episodes/stroke_reference_001_v03/fixtures/cli/
 !/episodes/stroke_reference_001_v03/fixtures/cli/outputs/
 
-# Reviewed delivery files (81) plus this .gitignore.
+# Reviewed core files plus this .gitignore.
 !/.gitignore
 !/README.md
 !/chain_demo/__init__.py
@@ -101,3 +100,49 @@
 !/episodes/stroke_reference_001_v03/fixtures/cli/provenance.json
 !/episodes/stroke_reference_001_v03/initial.json
 !/requirements.txt
+
+# Standalone demo code, scenario controls and synthetic hospital sources.
+!/demo/
+!/demo/scenarios/
+!/demo/simulator/
+!/demo/support/
+!/episodes/stroke_reference_001_v03/sources/
+!/episodes/stroke_reference_001_v03/sources/emr/
+!/episodes/stroke_reference_001_v03/sources/lis/
+!/episodes/stroke_reference_001_v03/sources/nursing/
+!/episodes/stroke_reference_001_v03/sources/ocs/
+!/episodes/stroke_reference_001_v03/sources/ris_pacs/
+!/demo/README.md
+!/demo/__init__.py
+!/demo/__main__.py
+!/demo/console.py
+!/demo/local_runtime.py
+!/demo/presentation.py
+!/demo/run.py
+!/demo/scenarios/expected.json
+!/demo/scenarios/recorded_hitl.json
+!/demo/scenarios/reference.yaml
+!/demo/simulator/__init__.py
+!/demo/simulator/clock.py
+!/demo/simulator/hospital.py
+!/demo/simulator/rebinding.py
+!/demo/simulator/scheduler.py
+!/demo/support/__init__.py
+!/demo/support/comparison.py
+!/demo/support/recorded_hitl.py
+!/demo/support/replay_history.py
+!/demo/support/test_driver.py
+!/demo/temporal_runtime.py
+!/demo/timers.py
+!/episodes/stroke_reference_001_v03/provenance.json
+!/episodes/stroke_reference_001_v03/simulation.yaml
+!/episodes/stroke_reference_001_v03/sources/emr/consult_note.json
+!/episodes/stroke_reference_001_v03/sources/emr/initial_note.json
+!/episodes/stroke_reference_001_v03/sources/emr/nihss.json
+!/episodes/stroke_reference_001_v03/sources/emr/registration.json
+!/episodes/stroke_reference_001_v03/sources/lis/cbc.json
+!/episodes/stroke_reference_001_v03/sources/lis/coag.json
+!/episodes/stroke_reference_001_v03/sources/nursing/nursing_v1.json
+!/episodes/stroke_reference_001_v03/sources/nursing/nursing_v2.json
+!/episodes/stroke_reference_001_v03/sources/ocs/ct_order.json
+!/episodes/stroke_reference_001_v03/sources/ris_pacs/ncct.json

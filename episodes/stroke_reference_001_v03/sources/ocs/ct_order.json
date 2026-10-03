@@ -1,0 +1,90 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "OCS",
+    "record_id": "ORD-2610060931",
+    "version": 1
+  },
+  "event_type": "ORDER_PLACED",
+  "source_time": "2026-10-06T15:24:05+09:00",
+  "source_sequence_no": 6,
+  "payload": {
+    "order_id": "ORD-2610060931",
+    "order_type": "IMAGING",
+    "priority": "STAT",
+    "procedure": {
+      "code": "CT-HEAD-NC",
+      "system": "LOCAL",
+      "display": "Brain CT (non-contrast)"
+    },
+    "ordered_time": "2026-10-06T15:24:05+09:00",
+    "ordered_by": {
+      "staff_id": "STF-20431",
+      "role": "EM_PHYSICIAN",
+      "role_ko": "응급의학과 전문의"
+    },
+    "reason_text": "Acute ischemic stroke, suspected",
+    "order_status": "ACTIVE"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004908",
+      "event_type": "ORDER_PLACED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "OCS",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 6,
+      "source_event_time": "2026-10-06T15:24:05+09:00",
+      "emitted_time": "2026-10-06T15:24:06+09:00",
+      "source_ref": {
+        "system": "OCS",
+        "record_type": "ORDER",
+        "record_id": "ORD-2610060931",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-06"
+      },
+      "payload": {
+        "order_id": "ORD-2610060931",
+        "order_type": "IMAGING",
+        "priority": "STAT",
+        "procedure": {
+          "code": "CT-HEAD-NC",
+          "system": "LOCAL",
+          "display": "Brain CT (non-contrast)"
+        },
+        "ordered_time": "2026-10-06T15:24:05+09:00",
+        "ordered_by": {
+          "staff_id": "STF-20431",
+          "role": "EM_PHYSICIAN",
+          "role_ko": "응급의학과 전문의"
+        },
+        "reason_text": "Acute ischemic stroke, suspected",
+        "order_status": "ACTIVE"
+      },
+      "integrity": {
+        "payload_hash": "sha256:00350859a8fcf85a6d3da3d800dab9162d79477026d681e804be8649d7c07a25",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "ct_order_id": {
+      "value": "ORD-2610060931",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:24:05+09:00"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:c19c4c3eafcfdfdd3d4e98e89b2d5c721b9481274e2d434df5d9e75b1de7c806"
+}

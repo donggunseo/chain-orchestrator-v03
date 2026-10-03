@@ -1,0 +1,176 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "LIS",
+    "record_id": "LAB-2610060918",
+    "version": 1
+  },
+  "event_type": "LAB_RESULTED",
+  "source_time": "2026-10-06T15:35:20+09:00",
+  "source_sequence_no": 10,
+  "payload": {
+    "panel_id": "LAB-2610060918",
+    "panel": "COAG",
+    "order_id": "ORD-2610060918",
+    "result_status": "FINAL",
+    "specimen_collected_time": "2026-10-06T15:16:50+09:00",
+    "resulted_time": "2026-10-06T15:35:20+09:00",
+    "results": [
+      {
+        "concept": "PT",
+        "code": {
+          "system": "LOINC",
+          "code": "5902-2"
+        },
+        "value": 12.1,
+        "unit": "s",
+        "reference_range": {
+          "low": 10.5,
+          "high": 13.5
+        },
+        "flag": "N"
+      },
+      {
+        "concept": "INR",
+        "code": {
+          "system": "LOINC",
+          "code": "6301-6"
+        },
+        "value": 1.04,
+        "unit": "{INR}",
+        "reference_range": {
+          "low": 0.85,
+          "high": 1.15
+        },
+        "flag": "N"
+      },
+      {
+        "concept": "APTT",
+        "code": {
+          "system": "LOINC",
+          "code": "3173-2"
+        },
+        "value": 29.8,
+        "unit": "s",
+        "reference_range": {
+          "low": 25.0,
+          "high": 38.0
+        },
+        "flag": "N"
+      }
+    ],
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/lab-results?panel_id=LAB-2610060918"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-005017",
+      "event_type": "LAB_RESULTED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "LIS",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 10,
+      "source_event_time": "2026-10-06T15:35:20+09:00",
+      "emitted_time": "2026-10-06T15:35:21+09:00",
+      "source_ref": {
+        "system": "LIS",
+        "record_type": "LAB_RESULT",
+        "record_id": "LAB-2610060918",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-10"
+      },
+      "payload": {
+        "panel_id": "LAB-2610060918",
+        "panel": "COAG",
+        "order_id": "ORD-2610060918",
+        "result_status": "FINAL",
+        "specimen_collected_time": "2026-10-06T15:16:50+09:00",
+        "resulted_time": "2026-10-06T15:35:20+09:00",
+        "results": [
+          {
+            "concept": "PT",
+            "code": {
+              "system": "LOINC",
+              "code": "5902-2"
+            },
+            "value": 12.1,
+            "unit": "s",
+            "reference_range": {
+              "low": 10.5,
+              "high": 13.5
+            },
+            "flag": "N"
+          },
+          {
+            "concept": "INR",
+            "code": {
+              "system": "LOINC",
+              "code": "6301-6"
+            },
+            "value": 1.04,
+            "unit": "{INR}",
+            "reference_range": {
+              "low": 0.85,
+              "high": 1.15
+            },
+            "flag": "N"
+          },
+          {
+            "concept": "APTT",
+            "code": {
+              "system": "LOINC",
+              "code": "3173-2"
+            },
+            "value": 29.8,
+            "unit": "s",
+            "reference_range": {
+              "low": 25.0,
+              "high": 38.0
+            },
+            "flag": "N"
+          }
+        ],
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/lab-results?panel_id=LAB-2610060918"
+      },
+      "integrity": {
+        "payload_hash": "sha256:6f5fc4fae35d0f7753dc32f96be7f3fa37f4f2d600efdad7527ff164888f0c21",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "pt_s": {
+      "value": 12.1,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:20+09:00",
+      "unit": "s",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "inr": {
+      "value": 1.04,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:20+09:00",
+      "unit": "{INR}",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "aptt_s": {
+      "value": 29.8,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:20+09:00",
+      "unit": "s",
+      "confirmation_status": "UNCONFIRMED"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:e102df91f298c8b9908f800264a7a5b8db52aec170f63478333e536dd12bfdec"
+}

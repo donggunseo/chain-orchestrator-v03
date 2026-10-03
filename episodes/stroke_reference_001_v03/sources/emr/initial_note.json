@@ -1,0 +1,153 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "ER_EMR",
+    "record_id": "DOC-2610060412",
+    "version": 1
+  },
+  "event_type": "CLINICAL_DOCUMENT_UPDATED",
+  "source_time": "2026-10-06T15:19:48+09:00",
+  "source_sequence_no": 4,
+  "payload": {
+    "document_id": "DOC-2610060412",
+    "document_type": "ED_INITIAL_NOTE",
+    "document_version": 1,
+    "document_status": "CURRENT",
+    "author": {
+      "staff_id": "STF-20431",
+      "role": "EM_PHYSICIAN",
+      "role_ko": "응급의학과 전문의"
+    },
+    "saved_time": "2026-10-06T15:19:48+09:00",
+    "text_hash": "sha256:7b6be56322025e48b6c66adb1e48f852639672f65fbb6aba96af0d21157dcbf8",
+    "char_count": 1227,
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060412?version=1"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004874",
+      "event_type": "CLINICAL_DOCUMENT_UPDATED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "ER_EMR",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 4,
+      "source_event_time": "2026-10-06T15:19:48+09:00",
+      "emitted_time": "2026-10-06T15:19:50+09:00",
+      "source_ref": {
+        "system": "ER_EMR",
+        "record_type": "ED_INITIAL_NOTE",
+        "record_id": "DOC-2610060412",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-04"
+      },
+      "payload": {
+        "document_id": "DOC-2610060412",
+        "document_type": "ED_INITIAL_NOTE",
+        "document_version": 1,
+        "document_status": "CURRENT",
+        "author": {
+          "staff_id": "STF-20431",
+          "role": "EM_PHYSICIAN",
+          "role_ko": "응급의학과 전문의"
+        },
+        "saved_time": "2026-10-06T15:19:48+09:00",
+        "text_hash": "sha256:7b6be56322025e48b6c66adb1e48f852639672f65fbb6aba96af0d21157dcbf8",
+        "char_count": 1227,
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060412?version=1"
+      },
+      "integrity": {
+        "payload_hash": "sha256:0bb8669b49718aea1839a4802258cd55d9a53f8cb0c4490769e40046995ba6e6",
+        "signature": null
+      }
+    },
+    "document": {
+      "document_id": "DOC-2610060412",
+      "version": 1,
+      "document_type": "ED_INITIAL_NOTE",
+      "title": "응급실 초진기록",
+      "source_system": "ER_EMR",
+      "author": {
+        "staff_id": "STF-20431",
+        "role": "EM_PHYSICIAN",
+        "role_ko": "응급의학과 전문의"
+      },
+      "saved_time": "2026-10-06T15:19:48+09:00",
+      "status": "CURRENT",
+      "text": "[응급실 초진기록]  2026-10-06  ER\n■ 내원경로\n119 구급차 이송 (직접 내원)\n■ 주호소\n* 주증상  Rt. side weakness / Speech disturbance (aphasia)\n  발생일시 : 2026-10-06 14시 20분 (발견 시각)\n■ 현병력\n68세 여자 환자로 고혈압, 당뇨, 고지혈증으로 본원 내분비내과 f/u 중인 분으로, 금일 13:35경 딸과 전화통화 시까지 특이증상 없었다고 함. 14:20경 딸이 집에 방문하였을 때 거실에 앉아 있으면서 말을 제대로 못하고 우측 팔다리를 움직이지 못하는 상태로 발견되어 119 신고 후 본원 응급실 내원함.\n119 도착(14:31) 당시 V/S 168/92-96-18-36.5, BST 156 mg/dL. 의식 alert하나 말 못하고 지시 따르기 일부 가능. 우측 상지 거상 불가, 우측 하지 drift 있음.\n두통, 구토, 경련, 외상 부인(보호자 진술). 최근 수술력, 출혈력 없음(보호자 진술).\n■ 과거력\nHTN (+, 약 10년, 본원 f/u), DM (+, 약 8년), Dyslipidemia (+)\nStroke/TIA (-), Cardiac dz (-), Op Hx (-), Seizure (-)\n<복용약물> (본원 처방, 최근 조제 2026-09-22)\n암로디핀 5mg qd, 메트포르민 500mg bid, 아토르바스타틴 20mg qd, 아스피린 100mg qd\n항응고제 복용 (-) : 보호자 확인 및 본원 처방내역상 없음\n■ 계통문진\n실어증으로 확인 제한, 보호자 문진으로 대체\n■ 신체검진\n* 기본신체사항 및 활력징후\nBP 172/94  HR 88  RR 18  BT 36.6  SpO2 97% (RA)\n의식 alert, GCS E4 V2 M6\n동공 3/3 mm, 대광반사 정상\nRt. facial palsy (central type)\nMotor: Rt. U/E G2, Rt. L/E G3, Lt. side G5\nGlobal aphasia (comprehension 일부 보존), dysarthria\nBabinski: Rt (+), Lt (-)\n■ 진단명\nAcute ischemic stroke, suspected (Lt. MCA territory)\n■ 진료계획\n# Brain CT (non-contrast) emergent\n# Stroke lab (CBC, PT/aPTT, chemistry), 12-lead ECG\n# NR 당직 협진 → IV thrombolysis 적응증 평가 예정",
+      "text_hash": "sha256:7b6be56322025e48b6c66adb1e48f852639672f65fbb6aba96af0d21157dcbf8",
+      "char_count": 1227
+    }
+  },
+  "facts": {
+    "lkw": {
+      "value": "2026-10-06T13:35:00+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T13:35:00+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "symptom_discovery": {
+      "value": "2026-10-06T14:20:00+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T14:20:00+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "medications": {
+      "value": [
+        "amlodipine 5 mg",
+        "metformin 500 mg",
+        "atorvastatin 20 mg",
+        "acetylsalicylic acid 100 mg"
+      ],
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "conditions": {
+      "value": [
+        "I10",
+        "E11.9",
+        "E78.5"
+      ],
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "anticoagulant": {
+      "value": false,
+      "status": "NO_EVIDENCE",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "antiplatelet": {
+      "value": true,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "recent_surgery_or_bleeding": {
+      "value": false,
+      "status": "NO_EVIDENCE",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "previous_stroke": {
+      "value": false,
+      "status": "NONE_DOCUMENTED",
+      "source_time": "2026-10-06T15:19:48+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:5ce49a6373a6dbedc75d15e47f1229cf450eb60db510444f2b9cefdbf976bf63"
+}

@@ -1,0 +1,88 @@
+driver_schema: chain-local-test/v0.3
+synthetic: true
+ticks:
+- anchor: ARRIVAL
+  offset_s: 0
+  wait:
+    source_applied: registration
+- anchor: ARRIVAL
+  offset_s: 169
+  wait:
+    source_applied: nursing_v1
+- anchor: nursing_v1
+  offset_s: 60
+  wait:
+    anchor: LAB_ORDERS_ENTERED
+- anchor: ARRIVAL
+  offset_s: 249
+  wait:
+    anchor: SPECIMEN_COLLECTED
+- anchor: ARRIVAL
+  offset_s: 269
+  wait:
+    source_applied: nursing_v2
+- anchor: ARRIVAL
+  offset_s: 427
+  wait:
+    hitl_open:
+      checkpoint: HITL_1_PROCEED_TO_CT
+      count: 1
+- anchor: S1_ENTERED
+  offset_s: 415
+  wait:
+    anchor: SIMULATED_NEUROLOGIST_ARRIVED
+- anchor: SIMULATED_NEUROLOGIST_ARRIVED
+  offset_s: 160
+  wait:
+    source_applied: consult_note
+- anchor: consult_note
+  offset_s: 12
+  wait:
+    source_applied: nihss
+- anchor: SPECIMEN_COLLECTED
+  offset_s: 975
+  wait:
+    source_applied: cbc
+- anchor: SPECIMEN_COLLECTED
+  offset_s: 1110
+  wait:
+    source_applied: coag
+- anchor: ARRIVAL
+  offset_s: 2100
+  wait:
+    hitl_decided:
+      checkpoint: HITL_1_PROCEED_TO_CT
+      count: 1
+- anchor: ARRIVAL
+  offset_s: 2100
+  wait:
+    result_accepted: tpa_decision_support.interim
+- anchor: S2_ENTERED
+  offset_s: 34
+  wait:
+    result_accepted: tpa_decision_support.interim
+- anchor: ct_order
+  offset_s: 703
+  wait:
+    hitl_open:
+      checkpoint: HITL_2_THROMBOLYSIS
+      count: 1
+- anchor: ncct
+  offset_s: 63
+  wait:
+    hitl_decided:
+      checkpoint: HITL_2_THROMBOLYSIS
+      count: 1
+responses:
+- checkpoint: HITL_1_PROCEED_TO_CT
+  anchor: ARRIVAL
+  offset_s: 2100
+- checkpoint: HITL_2_THROMBOLYSIS
+  anchor: ncct
+  offset_s: 63
+notes:
+- EXPLICIT TEST CLOCK ONLY; source offsets remain hospital plan, not this driver.
+- Response delays are virtual test settings, not original clinical response timestamps.
+- Waits synchronize named test observations; never a global pending=0 gate.
+- Only preinstalled exact inputs/times covered; early/different console inputs may
+  fail FIXTURE_NOT_FOUND.

@@ -1,0 +1,108 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "RIS_PACS",
+    "record_id": "ACC-2610060517",
+    "version": 3
+  },
+  "event_type": "IMAGING_STUDY_COMPLETED",
+  "source_time": "2026-10-06T15:35:48+09:00",
+  "source_sequence_no": 11,
+  "payload": {
+    "study_id": "IMG-2610060517",
+    "accession_number": "ACC-2610060517",
+    "order_id": "ORD-2610060931",
+    "modality": "CT",
+    "study_type": "NCCT_HEAD",
+    "body_part": "HEAD",
+    "contrast": false,
+    "started_time": "2026-10-06T15:33:20+09:00",
+    "ended_time": "2026-10-06T15:35:10+09:00",
+    "completed_time": "2026-10-06T15:35:48+09:00",
+    "dicom_reference": {
+      "study_instance_uid": "2.25.61985008381983110068245199482239381302",
+      "series_count": 2,
+      "instance_count": 96
+    },
+    "report_status": "NONE",
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/imaging-studies/IMG-2610060517"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-005022",
+      "event_type": "IMAGING_STUDY_COMPLETED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "RIS_PACS",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 11,
+      "source_event_time": "2026-10-06T15:35:48+09:00",
+      "emitted_time": "2026-10-06T15:35:49+09:00",
+      "source_ref": {
+        "system": "RIS_PACS",
+        "record_type": "STUDY_STATUS",
+        "record_id": "ACC-2610060517",
+        "version": 3
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-11"
+      },
+      "payload": {
+        "study_id": "IMG-2610060517",
+        "accession_number": "ACC-2610060517",
+        "order_id": "ORD-2610060931",
+        "modality": "CT",
+        "study_type": "NCCT_HEAD",
+        "body_part": "HEAD",
+        "contrast": false,
+        "started_time": "2026-10-06T15:33:20+09:00",
+        "ended_time": "2026-10-06T15:35:10+09:00",
+        "completed_time": "2026-10-06T15:35:48+09:00",
+        "dicom_reference": {
+          "study_instance_uid": "2.25.61985008381983110068245199482239381302",
+          "series_count": 2,
+          "instance_count": 96
+        },
+        "report_status": "NONE",
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/encounters/E261006058/imaging-studies/IMG-2610060517"
+      },
+      "integrity": {
+        "payload_hash": "sha256:c309ece63d43ac196de3bebdffe6b967848eace5ab0236d976bca5301c1e2254",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "ncct_completed": {
+      "value": true,
+      "status": "COMPLETED",
+      "source_time": "2026-10-06T15:35:48+09:00",
+      "confirmation_status": "PHYSICIAN_READ_REQUIRED"
+    },
+    "ncct_order_id": {
+      "value": "ORD-2610060931",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:48+09:00"
+    },
+    "ncct_study_id": {
+      "value": "IMG-2610060517",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:48+09:00"
+    },
+    "ncct_report_status": {
+      "value": "NONE",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:35:48+09:00"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:4ee3dad1ad30b8762d800c25595528b5557f5939b335f8ad97a13621c9379cc8"
+}

@@ -1,0 +1,128 @@
+simulation_schema: chain-simulation/v0.3
+synthetic: true
+runtime_status: EXECUTABLE_STAGE6
+reference_date: '2026-10-06'
+releases:
+- id: registration
+  source: sources/emr/registration.json
+  anchor: ARRIVAL
+  offset_s: 0
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:12:41+09:00'
+  arrival_timestamps:
+  - payload.arrival_time
+  - facts.arrival_time.value
+  - facts.arrival_time.source_time
+- id: nursing_v1
+  source: sources/nursing/nursing_v1.json
+  anchor: ARRIVAL
+  offset_s: 169
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:15:30+09:00'
+- id: nursing_v2
+  source: sources/nursing/nursing_v2.json
+  anchor: ARRIVAL
+  offset_s: 269
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:17:10+09:00'
+- id: initial_note
+  source: sources/emr/initial_note.json
+  anchor: ARRIVAL
+  offset_s: 427
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:19:48+09:00'
+- id: ct_order
+  source: sources/ocs/ct_order.json
+  anchor: S2_ENTERED
+  offset_s: 34
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:24:05+09:00'
+  actor: SIMULATED_CLINICIAN
+  requires:
+  - HITL1_PROCEED_ACCEPTED
+  - S2_ENTERED
+- id: consult_note
+  source: sources/emr/consult_note.json
+  anchor: SIMULATED_NEUROLOGIST_ARRIVED
+  offset_s: 160
+  timing_origin: VIRTUAL_ANCHOR; source note arrival 15:27, seconds assumed :00
+  reference_source_time: '2026-10-06T15:29:40+09:00'
+- id: nihss
+  source: sources/emr/nihss.json
+  anchor: consult_note
+  offset_s: 12
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:29:52+09:00'
+  relative_timestamps:
+  - facts.nihss.source_time
+- id: cbc
+  source: sources/lis/cbc.json
+  anchor: SPECIMEN_COLLECTED
+  offset_s: 975
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:33:05+09:00'
+  requires:
+  - LAB_ORDERS_ENTERED
+  - SPECIMEN_COLLECTED
+  collection_anchor: SPECIMEN_COLLECTED
+  order_anchor: LAB_ORDERS_ENTERED
+- id: coag
+  source: sources/lis/coag.json
+  anchor: SPECIMEN_COLLECTED
+  offset_s: 1110
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:35:20+09:00'
+  requires:
+  - LAB_ORDERS_ENTERED
+  - SPECIMEN_COLLECTED
+  collection_anchor: SPECIMEN_COLLECTED
+  order_anchor: LAB_ORDERS_ENTERED
+- id: ncct
+  source: sources/ris_pacs/ncct.json
+  anchor: ct_order
+  offset_s: 703
+  timing_origin: SOURCE
+  reference_source_time: '2026-10-06T15:35:48+09:00'
+  order_anchor: ct_order
+  relative_timestamps:
+  - payload.started_time
+  - payload.ended_time
+synthetic_anchors:
+- id: LAB_ORDERS_ENTERED
+  anchor: nursing_v1
+  offset_s: 60
+  timing_origin: VIRTUAL; original order time absent
+  data:
+    order_ids:
+    - ORD-2610060917
+    - ORD-2610060918
+    actor: SIMULATED_CLINICIAN
+- id: SPECIMEN_COLLECTED
+  anchor: ARRIVAL
+  offset_s: 249
+  requires:
+  - LAB_ORDERS_ENTERED
+  timing_origin: SOURCE
+  data:
+    specimen_id: SYNTHETIC-COLLECTION-1
+- id: SIMULATED_NEUROLOGIST_ARRIVED
+  anchor: S1_ENTERED
+  offset_s: 415
+  timing_origin: VIRTUAL exact anchor; note says arrival 15:27, reference S1 15:20:05
+publication_delay:
+  offset_s: 0
+  timing_origin: VIRTUAL; source does not specify transport delay
+notes:
+- Only Simulator may read this file; it must await actual anchors.
+- CT order is entered by simulated clinician after accepted HITL1 and S2; CHAIN creates
+  no order.
+- When anchors move, rebind source times/payloads; stored reference timestamps are
+  not runnable shifted records.
+observations:
+  states:
+    S1: S1_ENTERED
+    S2: S2_ENTERED
+  decisions:
+  - checkpoint: HITL_1_PROCEED_TO_CT
+    decision: PROCEED_TO_CT
+    anchor: HITL1_PROCEED_ACCEPTED

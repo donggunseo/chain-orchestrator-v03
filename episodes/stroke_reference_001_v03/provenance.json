@@ -1,0 +1,33 @@
+{
+  "synthetic": true,
+  "source_hashes": {
+    "reference": "sha256:8e8302e4df67a38f88b32dbd4551c44b59e68a193badae4f523f3f0fb07f30b3",
+    "v02_annotations": "sha256:10e2ca64e6376cfcecc259c5a575d7d34e4756709e3697a9f0fd2715a0f114a1"
+  },
+  "conversion": "EXPLICIT_REFERENCE_CASE_ANNOTATIONS; NOT NLP",
+  "transformations": [
+    {
+      "event_id": "EVT-HYG-261006-004874",
+      "removed_fact": "screen_positive",
+      "reason": "Agent output or legacy control flag, not source fact"
+    },
+    {
+      "event_id": "EVT-HYG-261006-004874",
+      "removed_fact": "screening_findings",
+      "reason": "Agent output or legacy control flag, not source fact"
+    },
+    {
+      "event_id": "EVT-HYG-261006-004961",
+      "removed_fact": "consult_ready",
+      "reason": "Agent output or legacy control flag, not source fact"
+    }
+  ],
+  "limitations": [
+    "Original tPA interim references a future CT order; every Agent template is unbound and must be audited before stage 3 use.",
+    "Original consultation note retains reference timestamps/pre-alert text; shifted causal runs require explicit rebinding in stage 6.",
+    "No exact laboratory order time exists in source; order anchor above is a virtual setting.",
+    "Source raw Events/documents are preserved, including original historical status labels and hash metadata.",
+    "Fact source_time uses documented historical occurrence for LKW/discovery and otherwise source report/save time.",
+    "Adapter publication release is explicit; runtime does not read this provenance, simulation, fixtures or expected data."
+  ]
+}

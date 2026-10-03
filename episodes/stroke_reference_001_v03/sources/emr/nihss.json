@@ -1,0 +1,214 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "ER_EMR",
+    "record_id": "OBS-2610060427-01",
+    "version": 1
+  },
+  "event_type": "OBSERVATION_RECORDED",
+  "source_time": "2026-10-06T15:29:52+09:00",
+  "source_sequence_no": 8,
+  "payload": {
+    "observation_id": "OBS-2610060427-01",
+    "concept": "NIHSS_TOTAL",
+    "code": {
+      "system": "LOINC",
+      "code": "70182-1"
+    },
+    "value": 12,
+    "unit": "{score}",
+    "components": {
+      "1a": {
+        "label": "Level of consciousness",
+        "score": 0
+      },
+      "1b": {
+        "label": "LOC questions",
+        "score": 2
+      },
+      "1c": {
+        "label": "LOC commands",
+        "score": 1
+      },
+      "2": {
+        "label": "Best gaze",
+        "score": 0
+      },
+      "3": {
+        "label": "Visual fields",
+        "score": 0
+      },
+      "4": {
+        "label": "Facial palsy",
+        "score": 2
+      },
+      "5a": {
+        "label": "Motor arm - left",
+        "score": 0
+      },
+      "5b": {
+        "label": "Motor arm - right",
+        "score": 2
+      },
+      "6a": {
+        "label": "Motor leg - left",
+        "score": 0
+      },
+      "6b": {
+        "label": "Motor leg - right",
+        "score": 1
+      },
+      "7": {
+        "label": "Limb ataxia",
+        "score": 0
+      },
+      "8": {
+        "label": "Sensory",
+        "score": 1
+      },
+      "9": {
+        "label": "Best language",
+        "score": 2
+      },
+      "10": {
+        "label": "Dysarthria",
+        "score": 1
+      },
+      "11": {
+        "label": "Extinction and inattention",
+        "score": 0
+      }
+    },
+    "effective_time": "2026-10-06T15:29:52+09:00",
+    "performer": {
+      "staff_id": "STF-31178",
+      "role": "NEUROLOGIST",
+      "role_ko": "신경과 당직의"
+    },
+    "method": "STROKE_ASSESSMENT_FORM",
+    "source_document": "document:DOC-2610060427@1"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004963",
+      "event_type": "OBSERVATION_RECORDED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "ER_EMR",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 8,
+      "source_event_time": "2026-10-06T15:29:52+09:00",
+      "emitted_time": "2026-10-06T15:29:53+09:00",
+      "source_ref": {
+        "system": "ER_EMR",
+        "record_type": "STROKE_ASSESSMENT_FORM",
+        "record_id": "OBS-2610060427-01",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-08"
+      },
+      "payload": {
+        "observation_id": "OBS-2610060427-01",
+        "concept": "NIHSS_TOTAL",
+        "code": {
+          "system": "LOINC",
+          "code": "70182-1"
+        },
+        "value": 12,
+        "unit": "{score}",
+        "components": {
+          "1a": {
+            "label": "Level of consciousness",
+            "score": 0
+          },
+          "1b": {
+            "label": "LOC questions",
+            "score": 2
+          },
+          "1c": {
+            "label": "LOC commands",
+            "score": 1
+          },
+          "2": {
+            "label": "Best gaze",
+            "score": 0
+          },
+          "3": {
+            "label": "Visual fields",
+            "score": 0
+          },
+          "4": {
+            "label": "Facial palsy",
+            "score": 2
+          },
+          "5a": {
+            "label": "Motor arm - left",
+            "score": 0
+          },
+          "5b": {
+            "label": "Motor arm - right",
+            "score": 2
+          },
+          "6a": {
+            "label": "Motor leg - left",
+            "score": 0
+          },
+          "6b": {
+            "label": "Motor leg - right",
+            "score": 1
+          },
+          "7": {
+            "label": "Limb ataxia",
+            "score": 0
+          },
+          "8": {
+            "label": "Sensory",
+            "score": 1
+          },
+          "9": {
+            "label": "Best language",
+            "score": 2
+          },
+          "10": {
+            "label": "Dysarthria",
+            "score": 1
+          },
+          "11": {
+            "label": "Extinction and inattention",
+            "score": 0
+          }
+        },
+        "effective_time": "2026-10-06T15:29:52+09:00",
+        "performer": {
+          "staff_id": "STF-31178",
+          "role": "NEUROLOGIST",
+          "role_ko": "신경과 당직의"
+        },
+        "method": "STROKE_ASSESSMENT_FORM",
+        "source_document": "document:DOC-2610060427@1"
+      },
+      "integrity": {
+        "payload_hash": "sha256:b395d50a8505d39b1f5ea369adb952ba5852667a05a00570b632c2be7b7c0734",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "nihss": {
+      "value": 12,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:29:52+09:00"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:fac3083385fdc55c2aa174f8c2f79aae65f9d5af75068a77ae15901ff4680889"
+}

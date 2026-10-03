@@ -1,0 +1,110 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "ER_EMR",
+    "record_id": "E261006058",
+    "version": 1
+  },
+  "event_type": "ED_ENCOUNTER_CREATED",
+  "source_time": "2026-10-06T15:12:41+09:00",
+  "source_sequence_no": 1,
+  "payload": {
+    "encounter_class": "ED",
+    "arrival_time": "2026-10-06T15:12:41+09:00",
+    "arrival_mode": "EMS_119",
+    "location": {
+      "area": "ED_RESUSCITATION",
+      "bed": "소생실-02"
+    },
+    "attending": {
+      "staff_id": "STF-20431",
+      "role": "EM_PHYSICIAN",
+      "role_ko": "응급의학과 전문의"
+    },
+    "demographics": {
+      "age": 68,
+      "sex": "F"
+    }
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004812",
+      "event_type": "ED_ENCOUNTER_CREATED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "ER_EMR",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 1,
+      "source_event_time": "2026-10-06T15:12:41+09:00",
+      "emitted_time": "2026-10-06T15:12:43+09:00",
+      "source_ref": {
+        "system": "ER_EMR",
+        "record_type": "ED_VISIT",
+        "record_id": "E261006058",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-01"
+      },
+      "payload": {
+        "encounter_class": "ED",
+        "arrival_time": "2026-10-06T15:12:41+09:00",
+        "arrival_mode": "EMS_119",
+        "location": {
+          "area": "ED_RESUSCITATION",
+          "bed": "소생실-02"
+        },
+        "attending": {
+          "staff_id": "STF-20431",
+          "role": "EM_PHYSICIAN",
+          "role_ko": "응급의학과 전문의"
+        },
+        "demographics": {
+          "age": 68,
+          "sex": "F"
+        }
+      },
+      "integrity": {
+        "payload_hash": "sha256:f47b2afcbe94d3ae58a5430e4e70476ad103a7cee8462f8ada275664b6864230",
+        "signature": null
+      }
+    }
+  },
+  "facts": {
+    "age": {
+      "value": 68,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:12:41+09:00"
+    },
+    "sex": {
+      "value": "F",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:12:41+09:00"
+    },
+    "arrival_time": {
+      "value": "2026-10-06T15:12:41+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:12:41+09:00"
+    },
+    "arrival_mode": {
+      "value": "EMS_119",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:12:41+09:00"
+    },
+    "bed": {
+      "value": "소생실-02",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:12:41+09:00"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:c36b4bbd3a00d74d82ec709fbcfe092ad3942ff1b5acdd12544d92d34b2eb420"
+}

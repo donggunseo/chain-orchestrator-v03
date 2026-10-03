@@ -1,0 +1,174 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "NURSING_EMR",
+    "record_id": "DOC-2610060403",
+    "version": 2
+  },
+  "event_type": "CLINICAL_DOCUMENT_UPDATED",
+  "source_time": "2026-10-06T15:17:10+09:00",
+  "source_sequence_no": 3,
+  "payload": {
+    "document_id": "DOC-2610060403",
+    "document_type": "ED_TRIAGE_NOTE",
+    "document_version": 2,
+    "document_status": "CURRENT",
+    "author": {
+      "staff_id": "STF-40858",
+      "role": "NURSE",
+      "role_ko": "응급실 담당 간호사"
+    },
+    "saved_time": "2026-10-06T15:17:10+09:00",
+    "text_hash": "sha256:79b6488ed2e9ba22fca609417c2fdc3221211598f938ff03e17437a6a4aefbef",
+    "char_count": 474,
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060403?version=2"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004851",
+      "event_type": "CLINICAL_DOCUMENT_UPDATED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "NURSING_EMR",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 3,
+      "source_event_time": "2026-10-06T15:17:10+09:00",
+      "emitted_time": "2026-10-06T15:17:11+09:00",
+      "source_ref": {
+        "system": "NURSING_EMR",
+        "record_type": "ED_TRIAGE_NOTE",
+        "record_id": "DOC-2610060403",
+        "version": 2
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-03"
+      },
+      "payload": {
+        "document_id": "DOC-2610060403",
+        "document_type": "ED_TRIAGE_NOTE",
+        "document_version": 2,
+        "document_status": "CURRENT",
+        "author": {
+          "staff_id": "STF-40858",
+          "role": "NURSE",
+          "role_ko": "응급실 담당 간호사"
+        },
+        "saved_time": "2026-10-06T15:17:10+09:00",
+        "text_hash": "sha256:79b6488ed2e9ba22fca609417c2fdc3221211598f938ff03e17437a6a4aefbef",
+        "char_count": 474,
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060403?version=2"
+      },
+      "integrity": {
+        "payload_hash": "sha256:aa85a7fa4d247222e84b777057a7c70add1253c58dcfeda45397d3263e55223a",
+        "signature": null
+      }
+    },
+    "document": {
+      "document_id": "DOC-2610060403",
+      "version": 2,
+      "document_type": "ED_TRIAGE_NOTE",
+      "title": "응급 초기평가(간호)",
+      "source_system": "NURSING_EMR",
+      "author": {
+        "staff_id": "STF-40858",
+        "role": "NURSE",
+        "role_ko": "응급실 담당 간호사"
+      },
+      "saved_time": "2026-10-06T15:17:10+09:00",
+      "status": "CURRENT",
+      "text": "[응급 초기평가 - 간호]  2026-10-06  ER\n내원시각 15:12  내원경로 119 구급차  동반 보호자 딸\n주호소 우측 팔다리 힘없음, 말 어눌함 (보호자 진술)\n발생시각 14:20 발견 / 마지막 정상 확인 13:35 (딸과 통화)\n의식 alert (지시수행 일부), 언어 표현 어려움\nV/S 15:14  BP 172/94  HR 88  RR 18  BT 36.6  SpO2 97% (RA)\nBST 158 mg/dL (15:14, POCT)\nKTAS 2 (급성 신경학적 결손)\nFAST: Face(+) Arm(+) Speech(+)\n낙상위험 高, 흡인위험 — NPO 유지\n15:16  체중 67 kg (침상체중계 측정), 신장 158 cm (보호자 진술)\n15:16  18G IV line Lt. forearm 확보, 채혈 (CBC, PT/aPTT, chem) 시행 → 검사실 전송\n15:17  12-lead ECG 시행 → 판독 대기",
+      "text_hash": "sha256:79b6488ed2e9ba22fca609417c2fdc3221211598f938ff03e17437a6a4aefbef",
+      "char_count": 474
+    }
+  },
+  "facts": {
+    "chief_complaint": {
+      "value": "Rt. side weakness / Speech disturbance (aphasia)",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "lkw": {
+      "value": "2026-10-06T13:35:00+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T13:35:00+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "symptom_discovery": {
+      "value": "2026-10-06T14:20:00+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T14:20:00+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "ktas": {
+      "value": 2,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "glucose": {
+      "value": 158,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "sbp": {
+      "value": 172,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "dbp": {
+      "value": 94,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "hr": {
+      "value": 88,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "rr": {
+      "value": 18,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "bt": {
+      "value": 36.6,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "spo2": {
+      "value": 97,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "weight_kg": {
+      "value": 67.0,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "height_cm": {
+      "value": 158,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:17:10+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:e89bc1bf2eda9e2d56a5bb7c46286533514bb19148060fcd4c2d03a1563a4e9c"
+}

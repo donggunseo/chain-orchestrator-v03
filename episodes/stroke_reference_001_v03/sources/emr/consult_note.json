@@ -1,0 +1,120 @@
+{
+  "record_schema": "chain-source/v0.3",
+  "synthetic": true,
+  "site_id": "HYUMC_GURI",
+  "patient_id": "PT-HYG-edd5a27af1",
+  "encounter_id": "E261006058",
+  "episode_id": "EP-HYG-261006-058",
+  "source_ref": {
+    "system": "ER_EMR",
+    "record_id": "DOC-2610060427",
+    "version": 1
+  },
+  "event_type": "CLINICAL_DOCUMENT_UPDATED",
+  "source_time": "2026-10-06T15:29:40+09:00",
+  "source_sequence_no": 7,
+  "payload": {
+    "document_id": "DOC-2610060427",
+    "document_type": "NEURO_CONSULT_NOTE",
+    "document_version": 1,
+    "document_status": "CURRENT",
+    "author": {
+      "staff_id": "STF-31178",
+      "role": "NEUROLOGIST",
+      "role_ko": "신경과 당직의"
+    },
+    "saved_time": "2026-10-06T15:29:40+09:00",
+    "text_hash": "sha256:f2dfbb24efc51d83fe7441512f42d32dedaae8127c8209e8676c38d36dca15d1",
+    "char_count": 669,
+    "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060427?version=1"
+  },
+  "raw": {
+    "event": {
+      "event_id": "EVT-HYG-261006-004961",
+      "event_type": "CLINICAL_DOCUMENT_UPDATED",
+      "schema_version": "CHAIN_EVENT_v0.1",
+      "site_id": "HYUMC_GURI",
+      "site_node_id": "SN-HYG-01",
+      "source_system": "ER_EMR",
+      "patient_id": "PT-HYG-edd5a27af1",
+      "encounter_id": "E261006058",
+      "episode_id": null,
+      "sequence_no": 7,
+      "source_event_time": "2026-10-06T15:29:40+09:00",
+      "emitted_time": "2026-10-06T15:29:41+09:00",
+      "source_ref": {
+        "system": "ER_EMR",
+        "record_type": "NEURO_CONSULT_NOTE",
+        "record_id": "DOC-2610060427",
+        "version": 1
+      },
+      "correlation": {
+        "trace_id": "TRC-HYG-261006-058-07"
+      },
+      "payload": {
+        "document_id": "DOC-2610060427",
+        "document_type": "NEURO_CONSULT_NOTE",
+        "document_version": 1,
+        "document_status": "CURRENT",
+        "author": {
+          "staff_id": "STF-31178",
+          "role": "NEUROLOGIST",
+          "role_ko": "신경과 당직의"
+        },
+        "saved_time": "2026-10-06T15:29:40+09:00",
+        "text_hash": "sha256:f2dfbb24efc51d83fe7441512f42d32dedaae8127c8209e8676c38d36dca15d1",
+        "char_count": 669,
+        "data_ref": "https://sitenode.hyumc-guri.local/chain/api/v0.1/documents/DOC-2610060427?version=1"
+      },
+      "integrity": {
+        "payload_hash": "sha256:da8f5d98bf742a7e958c20fb34c9ef143f872308f4922ebf4f683fcf2571633a",
+        "signature": null
+      }
+    },
+    "document": {
+      "document_id": "DOC-2610060427",
+      "version": 1,
+      "document_type": "NEURO_CONSULT_NOTE",
+      "title": "신경과 협진기록",
+      "source_system": "ER_EMR",
+      "author": {
+        "staff_id": "STF-31178",
+        "role": "NEUROLOGIST",
+        "role_ko": "신경과 당직의"
+      },
+      "saved_time": "2026-10-06T15:29:40+09:00",
+      "status": "CURRENT",
+      "text": "[신경과 협진기록 - 응급실]  2026-10-06  ER\n협진 요청: 응급의학과 (15:20 CHAIN S1 pre-alert 수신, 15:27 응급실 도착)\nS) 보호자(딸): 13:35 전화통화 시 정상, 14:20 방문 시 우측 마비·언어장애 발견. 두통·경련·외상 부인. 최근 수술·출혈 없음. 항응고제 복용 없음(약봉지 확인: 암로디핀, 메트포르민, 아토르바스타틴, 아스피린).\nO) Alert. Global aphasia (comprehension partially preserved). Rt. central facial palsy. Rt. arm drift → falls before 10 s (G2). Rt. leg drift (G3). Rt. hypesthesia. Dysarthria. Gaze: no forced deviation.\nNIHSS 12 (1a0 1b2 1c1 2-0 3-0 4-2 5a0 5b2 6a0 6b1 7-0 8-1 9-2 10-1 11-0)\nA) Acute ischemic stroke, Lt. MCA territory, probable. LKW 13:35 → IVT window 내 (4.5 h: 18:05까지).\nP) NCCT 확인 후 IV thrombolysis 여부 결정 예정. CT 완료 즉시 연락 요망. CTA 추가 여부는 NCCT 후 판단.",
+      "text_hash": "sha256:f2dfbb24efc51d83fe7441512f42d32dedaae8127c8209e8676c38d36dca15d1",
+      "char_count": 669
+    }
+  },
+  "facts": {
+    "lkw": {
+      "value": "2026-10-06T13:35:00+09:00",
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T13:35:00+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "nihss": {
+      "value": 12,
+      "status": "AVAILABLE",
+      "source_time": "2026-10-06T15:29:40+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "anticoagulant": {
+      "value": false,
+      "status": "NO_EVIDENCE",
+      "source_time": "2026-10-06T15:29:40+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    },
+    "recent_surgery_or_bleeding": {
+      "value": false,
+      "status": "NO_EVIDENCE",
+      "source_time": "2026-10-06T15:29:40+09:00",
+      "confirmation_status": "UNCONFIRMED"
+    }
+  },
+  "annotation": "SYNTHETIC_STRUCTURED_ANNOTATION_FROM_PRESERVED_V02; no NLP; NO_EVIDENCE is not confirmed absence",
+  "content_hash": "sha256:8fa48c1d84c8b2e4402c71072189fc0d5ee5ded43238497159368c562b9eb83d"
+}
