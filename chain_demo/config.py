@@ -6,7 +6,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
-IMPLEMENTATION_VERSION = "0.3-cleanup1"
+IMPLEMENTATION_VERSION = "0.3-state-spec1"
 
 
 class _UniqueKeyLoader(yaml.SafeLoader):

@@ -2,7 +2,7 @@
 
 이 데모는 가상 병원의 기록·검사 Event를 CHAIN에 보내고, 콘솔에서 의료진 결정을 입력해
 전체 Workflow를 확인한다. Temporal Service·Worker·Signal·Activity·Timer는 실제로 실행한다.
-병원 자료와 Agent 출력은 합성이며, 알림은 실제 발송 없이 `MOCK_RECORDED`로 기록한다.
+병원 자료와 Agent 출력은 합성이며, 알림과 EHR 표시·취소는 외부 전달 없이 `MOCK_RECORDED`로 기록한다.
 
 모든 명령은 저장소 루트에서 실행한다. Python 3.12를 권장한다.
 이 디렉터리와 해당 합성 Episode는 전달본에 포함된다.
@@ -69,6 +69,18 @@ HITL #2의 YES 선택에는 화면에 표시된 네 확인사항을 각각 확�
 열린 HITL의 근거는 이후 정보가 추가되어도 그대로 유지된다. 실시간 Event·Agent 결과는 별도로 표시한다.
 입력 중에도 자료와 Agent 응답을 계속 처리한다.
 
+S1 진입에서는 EHR 플래그와 대시보드 표시 활성화, 세 준비 알림이 Mock으로 기록된다.
+HITL #1에서 NOT_STROKE_PATHWAY를 선택하면 S1X로 가서 같은 표시를 해제하고,
+CT실·간호팀·당직 신경과에 대한 준비 취소 알림을 별도로 기록한다.
+SQLite의 최종 Mock 표시 상태는 늦게 완료된 이전 활성화 요청이 취소를 되돌리지 않도록 버전으로 관리한다.
+이 과정은 실제 EHR 화면이나 SMS를 변경하지 않으며 이미 보낸 메시지를 회수하는 기능도 아니다.
+표시 Adapter의 요청·응답과 실제 연결 위치는 [루트 README 8.3절](../README.md#83-ehr-표시대시보드-활성화와-취소)에 있다.
+
+설정의 State 이름과 설명은 의료진 뷰어의 13개 State 명세를 따른다.
+각 명세의 자료요건·유효시간은 현재 확보한 Context의 상태를 보여주는 항목이며,
+추가 임상 전이조건을 자동으로 만들지 않는다. 수정 방법은 [YAML 작성 안내](../README.md#92-state-명세와-yaml)에 있다.
+Summary 준비가 실패하면 HITL이 열리지 않고, 종료 State에서 완료된 Workflow는 후속 Event를 계속 받지 않는다.
+
 ## 3. HOLD/DEFER와 타이머 읽기
 
 HOLD/DEFER 응답이 수락되면 현재 State를 유지하고 재요청 타이머를 기다린다.
@@ -114,13 +126,13 @@ Service 없이 같은 흐름을 확인하려면 `--backend local`을 사용하�
 | 출력 파일 | 내용 |
 |---|---|
 | `outcome.json` | 실행 성공·실패·중단과 최종 State |
-| `snapshot.json` | 전체 Context, State 경로, Agent 결과, HITL 이력과 감사 기록 |
+| `snapshot.json` | 전체 Context, 현재 State 명세·자료요건 표시, State 경로, Agent 결과, HITL 이력, 표시·취소 receipt와 감사 기록 |
 | `manifest.json` | 실행에 고정한 Workflow·Policy·Registry·구현 버전과 데모 설정 |
 | `commands.jsonl` | 실제 요청·응답과 Temporal Activity의 실행 ID·재시도 횟수 |
 | `publications.json`, `simulation.json` | 자료 공개·Event와 실제 관찰한 가상 병원 기준 사건 |
 | `comparison.json` | `--expected`를 지정한 실행의 사후 비교 |
 | `temporal_history.json`, `temporal_execution.json`, `replay.json` | Temporal 실행 History와 Replay 결과 |
-| `notices.sqlite` | 요청 ID별 Mock 알림 기록 |
+| `notices.sqlite` | 요청 ID별 Mock 알림·표시·취소 receipt와 최종 Mock 표시 상태 |
 
 Temporal 실행은 종료 시 History를 저장하고 Replay한다. 저장한 History를 별도로 확인하려면:
 

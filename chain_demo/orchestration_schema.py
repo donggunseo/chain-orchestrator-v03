@@ -2,10 +2,12 @@
 import copy
 
 from .expressions import validate_expression
+from .effect_contracts import OPERATIONS as EFFECT_OPERATIONS
+from .state_specification import validate_state_specification_metadata
 from .validation import boolean, canonical_hash, fields, hash_value, positive, strings, text
 
 ACTIONS = {"authorize_and_run", "ensure_context", "request_hitl", "notify", "record_reason",
-           "record_hold_reason", "re_request_hitl_after_min", "seal_audit_trail"}
+           "record_hold_reason", "re_request_hitl_after_min", "seal_audit_trail", "apply_effect"}
 
 
 def normalize_action(action):
@@ -32,6 +34,10 @@ def normalize_action(action):
         fields(value,{"template","channel","recipient"},where="Notification")
         for item in value.values():text(item)
         if value["channel"] not in {"CONSOLE","LOG"}:raise ValueError("Only mock channels supported")
+    elif name=="apply_effect":
+        fields(value,{"operation","resource","target"},where="Presentation effect")
+        for item in value.values():text(item)
+        if value["operation"] not in EFFECT_OPERATIONS:raise ValueError("Unsupported effect operation")
     elif name=="re_request_hitl_after_min":positive(value)
     elif value is not None:raise ValueError("Action takes no argument")
     return {name:value,**{key:action[key] for key in sorted(optional & action.keys())}}
@@ -44,7 +50,8 @@ def validate_engine_bundle(bundle):
     hash_value(bundle["bundle_hash"])
     if canonical_hash({k:v for k,v in bundle.items() if k!="bundle_hash"})!=bundle["bundle_hash"]:
         raise ValueError("Engine bundle hash mismatch")
-    wf=fields(bundle["workflow"],{"workflow_id","version","site_id","initial_state","subscriptions","context_service","agents","states","hitl_checkpoints"},where="Workflow")
+    wf=fields(bundle["workflow"],{"workflow_id","version","site_id","initial_state","subscriptions","context_service","agents","states","hitl_checkpoints"},{"state_specification_version"},"Workflow")
+    if "state_specification_version" in wf and wf["state_specification_version"]!="1":raise ValueError("Unsupported State specification version")
     for key in ("workflow_id","version","site_id","initial_state"):text(wf[key])
     context=fields(wf["context_service"],{"agent","mode","available_states"},where="Context service")
     text(context["agent"]);text(context["mode"])
@@ -55,7 +62,9 @@ def validate_engine_bundle(bundle):
         for key in obj:text(key)
     if not agents or not states or wf["initial_state"] not in states:raise ValueError("Missing initial State/Agent mapping")
     policy=fields(bundle["policy"],{"policy_id","version","site_id","maximum_attempts","approved_agents","allowed_actions_for_agents",
-                  "forbidden_actions_for_agents","transition_rules","notification_templates","hitl_rules"},where="Engine Policy")
+                  "forbidden_actions_for_agents","transition_rules","notification_templates","hitl_rules"},{"allowed_effect_operations"},"Engine Policy")
+    strings(policy.get("allowed_effect_operations",[]))
+    if set(policy.get("allowed_effect_operations",[]))-EFFECT_OPERATIONS:raise ValueError("Unsupported Policy effect operation")
     for key in ("policy_id","version","site_id"):text(policy[key])
     if wf["site_id"]!=policy["site_id"]:raise ValueError("Workflow/Policy site mismatch")
     positive(policy["maximum_attempts"],integer=True)
@@ -125,8 +134,11 @@ def validate_engine_bundle(bundle):
                 if value not in checkpoints:raise ValueError("Unknown checkpoint")
                 if "after" in item and item["after"]!=checkpoints[value]["after"]:raise ValueError("HITL after mismatch")
             if name=="notify" and value["template"] not in policy["notification_templates"]:raise ValueError("Unapproved template")
+            if name=="apply_effect" and value["operation"] not in policy.get("allowed_effect_operations",[]):raise ValueError("Unapproved effect operation")
     for state,spec in states.items():
-        fields(spec,set(),{"name","terminal","on_enter","on_event","timeout"},"State")
+        fields(spec,set(),{"name","terminal","on_enter","on_event","timeout","specification"},"State")
+        if ("specification" in spec)!=("state_specification_version" in wf):raise ValueError("State specification version/metadata mismatch")
+        if "specification" in spec:validate_state_specification_metadata(spec,wf,policy)
         if "name" in spec:text(spec["name"])
         if "terminal" in spec:boolean(spec["terminal"])
         if spec.get("terminal") and (spec.get("on_event") or "timeout" in spec):

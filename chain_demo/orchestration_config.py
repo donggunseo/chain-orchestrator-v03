@@ -5,12 +5,14 @@ from pathlib import Path
 from .agent_config import load_agent_bundle, validate_agent_bundle
 from .config import ROOT, _read_yaml
 from .orchestration_schema import validate_engine_bundle
+from .state_specification import compile_state_specifications
 from .validation import canonical_hash, fields
 
 
 def project_engine_bundle(workflow, agents):
     validate_agent_bundle(agents)
-    workflow=copy.deepcopy(workflow)
+    source_workflow=copy.deepcopy(workflow)
+    workflow=compile_state_specifications(workflow,agents["policy"])
     for alias,setting in workflow["agents"].items():
         fields(setting,{"scopes","timeout_s","needs_context","outputs"},where="Workflow Agent settings")
         spec=agents["catalog"]["agents"][alias]
@@ -21,10 +23,15 @@ def project_engine_bundle(workflow, agents):
     policy={"policy_id":original["policy_id"],"version":original["policy_version"],"site_id":original["site_id"],
             **{key:copy.deepcopy(runtime[key]) for key in ("maximum_attempts","approved_agents","allowed_actions_for_agents",
                  "forbidden_actions_for_agents","transition_rules","notification_templates","hitl_rules")}}
+    if "allowed_effect_operations" in runtime:
+        policy["allowed_effect_operations"]=copy.deepcopy(runtime["allowed_effect_operations"])
     bundle={"engine_schema":"chain-orchestrator/v0.3","workflow":workflow,"policy":policy,
             "catalog_hash":agents["bundle_hash"],"run_manifest":copy.deepcopy(agents["run_manifest"])}
     # Pin the new executable Workflow separately from the preserved legacy one.
     bundle["run_manifest"]["workflow"]={"version":workflow["version"],"hash":canonical_hash(workflow)}
+    if "state_spec_schema" in source_workflow:
+        bundle["run_manifest"]["state_specification"]={"schema":source_workflow["state_spec_schema"],
+                "source_hash":canonical_hash(source_workflow),"compiler_version":workflow["state_specification_version"]}
     bundle["bundle_hash"]=canonical_hash(bundle)
     validate_engine_bundle(bundle)
     return bundle

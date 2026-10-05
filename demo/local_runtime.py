@@ -110,7 +110,7 @@ class AsyncLocalRuntime:
         if command["kind"]=="timer":
             await self.clock.sleep_until(due)
             await self.inbox.put({"kind":"timer","value":command});return
-        names={"resolve":"resolve","agent":"invoke","notify":"notify"};reply=None
+        names={"resolve":"resolve","agent":"invoke","notify":"notify","effect":"effect"};reply=None
         for attempt in range(self.engine.policy["maximum_attempts"]):
             try:
                 reply=await asyncio.wait_for(getattr(self.activities,names[command["kind"]])(copy.deepcopy(command)),

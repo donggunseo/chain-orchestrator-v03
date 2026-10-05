@@ -16,12 +16,12 @@ from .orchestration_config import load_orchestration_bundle
 from .temporal_workflow import ConfigurableClinicalWorkflow
 
 
-def create_worker(client, *, task_queue, configuration, store, receipt_path, write=print):
+def create_worker(client, *, task_queue, configuration, store, receipt_path, write=print, effects=None):
     runtime = AgentRuntime(configuration["agents"])
     notifier = MockNotifier(receipt_path, configuration["engine"]["policy"]["notification_templates"], write=write)
-    activities = OrchestrationActivities(configuration["engine"], runtime, store, notifier)
+    activities = OrchestrationActivities(configuration["engine"], runtime, store, notifier, effects=effects)
     return Worker(client, task_queue=task_queue, workflows=[ConfigurableClinicalWorkflow],
-                  activities=[activities.resolve, activities.invoke, activities.notify])
+                  activities=[activities.resolve, activities.invoke, activities.notify, activities.effect])
 
 
 async def serve(address, task_queue, *, initial_path, receipt_path):

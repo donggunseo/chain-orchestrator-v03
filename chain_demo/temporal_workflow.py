@@ -117,7 +117,8 @@ class ConfigurableClinicalWorkflow:
         try:
             retry = RetryPolicy(initial_interval=timedelta(seconds=1),
                                 maximum_attempts=self.engine.policy["maximum_attempts"])
-            names = {"resolve":"chain.resolve_event_v03", "agent":"chain.run_agent_v03", "notify":"chain.notify_v03"}
+            names = {"resolve":"chain.resolve_event_v03", "agent":"chain.run_agent_v03", "notify":"chain.notify_v03",
+                     "effect":"chain.apply_effect_v03"}
             timeout = command.get("timeout_s", 10)
             reply = await workflow.execute_activity(names[command["kind"]], command, result_type=dict,
                     start_to_close_timeout=timedelta(seconds=timeout),

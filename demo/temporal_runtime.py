@@ -43,6 +43,9 @@ class TemporalActivities:
     @activity.defn(name="chain.notify_v03")
     async def notify(self, command: dict) -> dict: return await self.execute("notify", command)
 
+    @activity.defn(name="chain.apply_effect_v03")
+    async def effect(self, command: dict) -> dict: return await self.execute("effect", command)
+
 
 class TemporalRuntime:
     def __init__(self, bundle, initial, journal, *, address="127.0.0.1:7233", start_local=False,
@@ -84,7 +87,7 @@ class TemporalRuntime:
                 "close_policy": "CLIENT_AND_EMBEDDED_WORKER_STOP; no cancel/terminate Signal"}
             bridge = self.bridge_factory(self.journal)
             await self.stack.enter_async_context(Worker(client, task_queue=identity, workflows=[Workflow],
-                                        activities=[bridge.resolve, bridge.invoke, bridge.notify]))
+                                        activities=[bridge.resolve, bridge.invoke, bridge.notify, bridge.effect]))
             argument = {"bundle": self.bundle, "initial": self.initial}
             if self.test_mode:
                 argument.update(test_mode=True, test_now=self.test_now, test_timer_scale=self.timer_scale)

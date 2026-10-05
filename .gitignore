@@ -45,6 +45,9 @@
 !/chain_demo/contracts.py
 !/chain_demo/data_io.py
 !/chain_demo/engine.py
+!/chain_demo/effect_contracts.py
+!/chain_demo/effects.py
+!/chain_demo/state_specification.py
 !/chain_demo/evidence.py
 !/chain_demo/expressions.py
 !/chain_demo/notifier.py

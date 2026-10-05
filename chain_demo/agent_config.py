@@ -7,6 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 from .config import ROOT, IMPLEMENTATION_VERSION, _read_yaml
 from .registry import validate_bindings, verify_installation
 from .validation import canonical_hash, fields, strings, text
+from .effect_contracts import OPERATIONS
 
 
 def validate_agent_bundle(bundle):
@@ -19,7 +20,10 @@ def validate_agent_bundle(bundle):
     if policy["engine_schema"]!="chain-policy/v0.3":raise ValueError("Unsupported Agent Policy schema")
     for key in ("policy_id","policy_version","site_id"):text(policy[key])
     fields(policy["runtime"],{"maximum_attempts","approved_agents","allowed_actions_for_agents","forbidden_actions_for_agents",
-                             "transition_rules","notification_templates","hitl_rules"},where="Agent Policy runtime")
+                             "transition_rules","notification_templates","hitl_rules"},{"allowed_effect_operations"},"Agent Policy runtime")
+    strings(policy["runtime"].get("allowed_effect_operations",[]))
+    if set(policy["runtime"].get("allowed_effect_operations",[]))-OPERATIONS:
+        raise ValueError("Unsupported Policy effect operation")
     if not isinstance(catalog["agents"], dict) or not catalog["agents"]:
         raise ValueError("Agent catalog requires registered implementations")
     for alias, spec in catalog["agents"].items():

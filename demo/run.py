@@ -38,9 +38,18 @@ class DemoOutput:
         if value.startswith("MOCK_RECORDED "):
             try:
                 receipt=json.loads(value[len("MOCK_RECORDED "):])
-                value=("MOCK_RECORDED | 모의 알림 기록 · 실제 발송 없음 | "+
-                       safe_text(receipt["recipient"])+" · "+safe_text(receipt["template"])+
-                       " | "+safe_text(receipt["request_id"]))
+                if receipt.get("receipt_schema")=="chain-effect-receipt/v0.3":
+                    labels={"SET_FLAG":"EHR 표시 활성화", "CLEAR_FLAG":"EHR 표시 해제",
+                            "SET_DASHBOARD":"대시보드 활성화", "CLEAR_DASHBOARD":"대시보드 해제"}
+                    operation=labels.get(receipt["operation"],receipt["operation"])
+                    result="Mock 상태 반영" if receipt["projection_updated"] else "Mock 상태 유지 · 중복/늦은 요청"
+                    value=("MOCK_RECORDED | 모의 표시 기록 · 실제 EHR 변경 없음 | "+safe_text(operation)+
+                           " · "+safe_text(receipt["target"])+" / "+safe_text(receipt["resource"])+
+                           " | "+result+" | "+safe_text(receipt["request_id"]))
+                else:
+                    value=("MOCK_RECORDED | 모의 알림 기록 · 실제 발송 없음 | "+
+                           safe_text(receipt["recipient"])+" · "+safe_text(receipt["template"])+
+                           " | "+safe_text(receipt["request_id"]))
             except (ValueError,KeyError,TypeError):pass
         elif value.startswith("TEST_CLOCK_AT | "):
             value+=" | 가상 에피소드 시계 · Temporal 타이머는 별도 실제 시간"
@@ -94,6 +103,7 @@ class JournalActivities:
     async def resolve(self,command):return await self.execute("resolve",command)
     async def invoke(self,command):return await self.execute("invoke",command)
     async def notify(self,command):return await self.execute("notify",command)
+    async def effect(self,command):return await self.execute("effect",command)
 
 
 async def run(args,*,write=print,input_fn=None):
@@ -175,7 +185,7 @@ async def run(args,*,write=print,input_fn=None):
                         while True:
                             snapshot=await runtime.snapshot()
                             presenter.observe(snapshot,timers=timer_views)
-                            failures=[e for e in snapshot["audit"] if e["type"] in {"AGENT_FAILED_OR_REJECTED","CONTEXT_RESOLUTION_FAILED","NOTIFICATION_FAILED_OR_REJECTED"}]
+                            failures=[e for e in snapshot["audit"] if e["type"] in {"AGENT_FAILED_OR_REJECTED","CONTEXT_RESOLUTION_FAILED","NOTIFICATION_FAILED_OR_REJECTED","EFFECT_FAILED_OR_REJECTED"}]
                             if failures or hospital.failures or hospital.scheduler.failures:
                                 raise RuntimeError(json.dumps(failures+hospital.failures+hospital.scheduler.failures,ensure_ascii=False))
                             for task in tasks:

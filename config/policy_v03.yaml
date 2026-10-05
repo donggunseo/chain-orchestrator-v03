@@ -1,9 +1,14 @@
 engine_schema: chain-policy/v0.3
 policy_id: chain-safety-policy
-policy_version: 0.3-step5
+policy_version: 0.3-state-spec1
 site_id: HYUMC_GURI
 runtime:
   maximum_attempts: 2
+  allowed_effect_operations:
+  - SET_FLAG
+  - CLEAR_FLAG
+  - SET_DASHBOARD
+  - CLEAR_DASHBOARD
   approved_agents:
     stroke-screening-agent:
       versions:
@@ -66,6 +71,9 @@ runtime:
   - CT_ROOM_PREALERT_L1
   - NURSE_S1_PREP
   - NEURO_ONCALL_S1
+  - CT_ROOM_PREALERT_CANCELLED
+  - NURSE_S1_PREP_CANCELLED
+  - NEURO_ONCALL_S1_CANCELLED
   - HITL1_OVERDUE
   - CT_ROOM_CONFIRMED_L2
   - NEURO_ONCALL_S2

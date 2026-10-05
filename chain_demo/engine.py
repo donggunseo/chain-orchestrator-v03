@@ -9,6 +9,8 @@ from .context import ContextLedger
 from .contracts import (validate_event, validate_agent_result, validate_hitl_request,
                         validate_hitl_decision, validate_hitl_decision_shape)
 from .expressions import matches, evaluate
+from .effect_contracts import validate_effect_receipt
+from .state_specification import state_specification_view
 from .orchestration_schema import normalize_action, validate_engine_bundle
 from .source_contracts import identity, validate_completion, REVISION_EVENTS
 from .validation import (canonical_hash, fields, hash_value, json_value, safe_audit_id,
@@ -31,6 +33,7 @@ class Engine:
         self.state = None
         self.generation = self.context_version = self.counter = 0
         self.history, self.audit, self.out, self.waiters, self.notifications = [], [], [], [], []
+        self.effects = []
         self.pending, self.timers, self.results, self.agent_outputs, self.agent_runs = {}, {}, {}, {}, {}
         self.context_requests, self.summary_cache, self.open_hitl = {}, {}, {}
         self.hitl_history = {}
@@ -205,6 +208,13 @@ class Engine:
                 request = {"request_schema": "chain-notification/v0.3", "request_id": cid,
                            "episode_id": self.initial["episode_id"], **copy.deepcopy(value)}
                 self._queue({"kind": "notify", "id": cid, "job": {"catalog_hash": self.bundle["catalog_hash"],
+                             "request": request, "recorded_at": self.now}, "engine_hash": self.bundle["bundle_hash"]})
+            elif name == "apply_effect":
+                cid = self._id("effect")
+                request = {"request_schema": "chain-effect/v0.3", "request_id": cid,
+                           "episode_id": self.initial["episode_id"], "effect_version": self.counter,
+                           **copy.deepcopy(value)}
+                self._queue({"kind": "effect", "id": cid, "job": {"catalog_hash": self.bundle["catalog_hash"],
                              "request": request, "recorded_at": self.now}, "engine_hash": self.bundle["bundle_hash"]})
             elif name == "re_request_hitl_after_min":
                 self._timer("hitl_retry", value*60, checkpoint=event["payload"]["checkpoint"])
@@ -431,6 +441,16 @@ class Engine:
             else:
                 self.notifications.append(copy.deepcopy(reply))
                 self._log("MOCK_RECORDED", **reply)
+        elif kind == "effect":
+            try:
+                validate_effect_receipt(reply, command["job"]["request"])
+                if not timestamp(command["job"]["recorded_at"]) <= timestamp(reply["recorded_at"]) <= timestamp(now):
+                    raise ValueError("Effect receipt time outside request/completion interval")
+            except (ValueError, KeyError, TypeError) as exc:
+                self._reject_input("EFFECT_FAILED_OR_REJECTED", str(exc), request_id=cid)
+            else:
+                self.effects.append(copy.deepcopy(reply))
+                self._log("EFFECT_RECORDED", **reply)
         else:
             self._complete_agent(command, reply)
         return self._commands()
@@ -562,7 +582,7 @@ class Engine:
             self._consume(consumer)
 
     def snapshot(self):
-        return copy.deepcopy({"episode_id": self.initial["episode_id"], "state": self.state,
+        result={"episode_id": self.initial["episode_id"], "state": self.state,
             "state_history": self.history, "generation": self.generation, "context_version": self.context_version,
             "facts": self.facts, "source_snapshot": self.context.snapshot(), "fact_history": self.context.history,
             "agent_runs": self.agent_runs, "latest_results": self.results, "agent_outputs": self.agent_outputs,
@@ -570,7 +590,13 @@ class Engine:
             "hitl_history":self.hitl_history,"deferred_decision_count":len(self._deferred_decisions),
             "notifications": self.notifications, "audit": self.audit, "pending_count": len(self.pending),
             "unresolved_count": len(self._source_order), "waiter_count": len(self.waiters), "done": self.done,
-            "bundle_hash": self.bundle["bundle_hash"], "run_manifest": self.bundle["run_manifest"]})
+            "bundle_hash": self.bundle["bundle_hash"], "run_manifest": self.bundle["run_manifest"]}
+        if "allowed_effect_operations" in self.policy:
+            result["effects"]=self.effects
+        if self.state and "specification" in self.wf["states"][self.state]:
+            result["state_specification"]=state_specification_view(self.wf["states"][self.state],
+                    self.wf,self.facts,self.now,self.policy,state_id=self.state)
+        return copy.deepcopy(result)
 
     def finish(self):
         if not self.done:
