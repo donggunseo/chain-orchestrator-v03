@@ -65,8 +65,13 @@ class ConfigurableClinicalWorkflow:
             # The reducer preserves prior timer/request behavior when replaying
             # a history that predates the resume primitive.
             resume_enabled = workflow.patched("chain-hitl-resume-v1")
+            # Source-document view bundles are additive Query data. Their
+            # construction is disabled when replaying histories from before
+            # this change, preserving those executions' original records.
+            documents_enabled = workflow.patched("chain-hitl-source-documents-v1")
             self.engine = Engine(argument["bundle"], argument["initial"], now=self._now(),
-                                 hitl_resume_enabled=resume_enabled)
+                                 hitl_resume_enabled=resume_enabled,
+                                 source_documents_enabled=documents_enabled)
             self._schedule(self.engine.start(self._now()))
         except (ValueError, KeyError, TypeError) as exc:
             raise ApplicationError(f"Invalid v0.3 startup: {exc}", non_retryable=True) from exc

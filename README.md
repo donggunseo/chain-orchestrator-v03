@@ -28,6 +28,7 @@ Temporal Client의 Workflow 시작·Signal·Query를 사용한다.
 | Event 수신·자료 조회 | [adapters/ingress.py](chain_demo/adapters/ingress.py), [contracts.py](chain_demo/contracts.py) | `SourceIngress.receive()`, `submit_event` Signal, `resolve_source()` |
 | 원천자료 수집·버전 저장 | [adapters/](chain_demo/adapters/), [source_contracts.py](chain_demo/source_contracts.py) | 출처별 `publish()`, Store의 `publish()/resolve()`, 공유·영속 저장소 연결 |
 | HITL 화면·결정·재요청 | [contracts.py](chain_demo/contracts.py), [temporal_workflow.py](chain_demo/temporal_workflow.py) | 고정 근거 표시, 결정·역할·확인사항 검증, `submit_decision`·`request_hitl_resume` Signal |
+| HITL 출처 원문 조회 | [context.py](chain_demo/context.py), [hitl_documents.py](chain_demo/hitl_documents.py), [engine.py](chain_demo/engine.py) | 근거가 참조하는 기록·버전의 원문 고정, 조회 계약 검증, HITL 기록에 포함 |
 | Agent 구현·API 호출 | [stroke_screening.py](chain_demo/agents/stroke_screening.py), [tpa_decision_support.py](chain_demo/agents/tpa_decision_support.py), [agents/runtime.py](chain_demo/agents/runtime.py) | 등록 모듈의 `invoke(request, snapshot, services)` 구현 |
 | Context 구조화·캐시 | [clinical_summary.py](chain_demo/agents/clinical_summary.py), [agents/services.py](chain_demo/agents/services.py) | 요청 범위 구조화, Snapshot·scope·구현 버전별 캐시 |
 | Agent 등록·호출 설정 | [agents_v03.yaml](config/agents_v03.yaml), [plugins.yaml](config/plugins.yaml), [policy_v03.yaml](config/policy_v03.yaml), [workflow_v03.yaml](config/workflow_v03.yaml) | 구현·버전·권한·mode·입출력·호출 시점 등록 |
@@ -237,7 +238,7 @@ YES에는 설정된 네 확인사항이 필요하다: `NCCT_NO_HEMORRHAGE_PHYSIC
 | HITL #1 `DEFER` | S1 유지 → 타이머 만료 또는 의료진의 재요청 → 새 HITL #1 준비 |
 | HITL #2 `HOLD` | S2_1 유지 → 타이머 만료 또는 의료진의 재요청 → 새 HITL #2 준비 |
 | 보류 중 `ready` | 모의 역할·ID를 입력해 재요청 전송. 근거 준비가 끝나면 결정 화면 표시 |
-| `docs` / `json` | 현재 요청에 고정된 문서 전문 / 전체 근거 JSON 보기 |
+| `docs` / `json` | 현재 요청에 연결된 출처 원문 / 판단 근거와 출처 원문을 구분한 전체 JSON 보기 |
 | `q` | 결정을 생성하지 않고 콘솔 입력 종료. 부분 결과 저장. Workflow 취소 명령과 구분 |
 
 HOLD/DEFER 후에는 현재 State와 재요청 타이머가 표시된다. 남은 시간은 실제 Temporal 경과시간을 기준으로 하며,
@@ -478,7 +479,7 @@ Summary 실행 실패 audit는 내부 Agent request_id로 기록되며 외부 Co
 |---|---|
 | `state`, `generation`, `done`, `state_history` | 현재 State·진입 세대·종료 여부·경로 |
 | `facts`, `context_version` | 현재 원천 Context와 버전. Agent 입력의 scoped Snapshot과 구분 |
-| `open_hitl` | 열린 결정의 고정 Request·Snapshot·Agent Results |
+| `open_hitl` | 열린 결정의 고정 Request·Snapshot·Agent Results와 별도 `source_documents` |
 | `hitl_history`, `context_requests` | 결정 Request ID별 이력·범위별 구조화 성공 결과 |
 | `hitl_waits` | checkpoint별 보류·재요청 준비 상태, 이전·새 Request ID, 재요청 타이머와 오류 |
 | `hitl_resume_commands` | command_id별 재요청 수락·거절·준비 완료·실패·종료 결과 |
@@ -503,6 +504,82 @@ ID별 수락 결과를 조회하는 구현은 [demo/console.py](demo/console.py)
 
 화면에는 `snapshot["open_hitl"][checkpoint]`의 `status == "OPEN"`인 항목을 표시한다.
 결정 근거는 해당 항목의 `request`, 고정 `snapshot`, `results`를 사용한다.
+
+#### 고정 근거와 출처 원문
+
+Agent 입력 Snapshot에는 요청 범위의 항목만 들어간다. 구조화 항목이 충분해도 문서 전문은
+포함되지 않을 수 있다. `source_documents`는 그 항목들의 출처를 확인하기 위한 별도의 열람자료다.
+이 자료는 Agent 입력을 확장하거나 새 전이조건을 만드는 데 사용하지 않는다.
+
+HITL이 열릴 때 근거의 출처 참조를 따라 같은 기록·같은 버전의 문서를 연결한다.
+근거 Snapshot의 `known_at`까지 CHAIN에 알려진 원문만 사용하며, 문서 없는 검사 기록도 그 상태를 남긴다.
+이후 현재 Context에 기록이 추가되어도 열린 요청의 근거와 열람자료는 바뀌지 않는다.
+관련 근거의 정정으로 새 요청이 열리면 새 Request ID의 자료를 표시한다.
+문서 전문을 열람한다는 이유만으로 기존 판단 의존성이나 무효화 범위를 넓히지 않는다.
+
+열람자료는 기존 `snapshot` Query의 `open_hitl`과 Request ID별 `hitl_history`에 포함된다.
+별도의 문서 Signal을 보내거나 최신 `facts`에서 문서를 찾아 붙일 필요는 없다.
+HTTP 응답에서는 판단 근거와 출처 원문을 별도 항목으로 전달한다.
+
+| HITL 기록 항목 | 화면에서 사용할 내용 |
+|---|---|
+| `request`, `snapshot`, `results` | 판단에 사용한 고정 요청·입력·Agent 결과 |
+| `source_documents.contract_schema` | `chain-hitl-documents/v0.3` |
+| `source_documents.request_id`, `evidence_snapshot_id` | 이 열람자료가 연결된 HITL 요청·판단 Snapshot ID |
+| `source_documents.frozen_at` | 열람자료를 고정한 시각. 자료 사용의 기준 시각은 판단 Snapshot의 `known_at` |
+| `source_documents.purpose` | `SOURCE_REFERENCE`: 출처 확인용 자료 |
+| `source_documents.entries` | 출처 기록·버전별 문서 또는 미확보 상태 |
+| `source_documents.bundle_id` | 열람자료 내용의 hash. 조회·표시용 식별자 |
+
+각 `entries` 항목에는 다음 필드가 있다.
+
+| Entry 필드 | 형식·처리 |
+|---|---|
+| `source_ref` | `{system, record_id, version}`. 조회한 정확한 출처 버전 |
+| `referenced_fields` | 해당 기록에서 판단 근거가 참조한 필드명 배열 |
+| `status` | `AVAILABLE` 원문 확보 / `NO_DOCUMENT` 기록에 문서 없음 / `UNAVAILABLE` 해당 원문 사용 불가 |
+| `document` | `AVAILABLE`일 때만 포함하는 normalized Fact. `value`가 원문이며 출처·기록시각·인지시각·Fact 상태도 보존 |
+| `reason` | 원문이 없는 상태의 사유 코드 |
+
+`AVAILABLE`은 원문 Fact의 상태가 `AVAILABLE`이고 비어 있지 않은 문자열 본문이 확보되었다는 뜻이다.
+오류·철회·본문 부재 등으로 사용할 수 없는 문서는 `UNAVAILABLE`로 표시한다.
+미확보 원문을 다른 버전이나 비슷한 문서로 대체하지 않는다.
+
+| `reason` 코드 | 표시할 내용 |
+|---|---|
+| `NO_DOCUMENT` | 해당 버전의 기록에 문서 필드가 없음 |
+| `SOURCE_NOT_RECORDED` | 해당 출처 기록·버전이 Context에 보존되어 있지 않음 |
+| `DOCUMENT_NOT_KNOWN_AT_EVIDENCE_TIME` | 판단 Snapshot의 기준 시각 이후에 CHAIN에 알려진 기록 |
+| `DOCUMENT_UNAVAILABLE` | 문서의 상태가 AVAILABLE이 아니거나 본문이 없거나 문자열 형식이 아님 |
+
+```python
+from chain_demo.hitl_documents import validate_source_documents
+
+state = await handle.query("snapshot")
+record = state["open_hitl"][checkpoint]
+documents = record.get("source_documents")
+if documents is not None:
+    validate_source_documents(documents, record["request"], record["snapshot"])
+    for entry in documents["entries"]:
+        # 원문이 없는 출처도 상태·사유를 화면에 표시한다.
+        source_ref = entry["source_ref"]
+        status = entry["status"]
+        document = entry.get("document")
+```
+
+`validate_source_documents()`는 조회 자료가 같은 Request·판단 Snapshot에 연결되었는지,
+출처와 참조 필드가 고정 근거에 속하는지, 버전·시각·본문·hash가 유효한지 함께 검사한다.
+
+`source_documents`가 없는 이전 형식의 기록은 출처 열람자료 미제공으로 표시한다.
+그 기록의 고정 Snapshot에 문서가 있다면 해당 문서만 표시할 수 있다. 현재 Context의 문서로 보충하지 않는다.
+Temporal의 `chain-hitl-source-documents-v1` patch가 적용된 새 Workflow 실행부터 이 조회 항목을 제공한다.
+이전 History를 Replay하는 실행은 기존 기록 형식을 유지한다.
+
+`bundle_id`는 결정 응답의 `evidence_viewed`에 추가할 수 있는 ID가 아니다.
+기존 결정 계약에서 허용한 고정 Snapshot ID와 Agent Result request_id를 사용한다.
+원문 열람 로그가 필요하면 백엔드에서 Request ID·출처 버전·열람자를 별도로 기록한다.
+
+#### 결정 응답
 
 `request`의 schema는 `chain-hitl-request/v0.3`이고 필수 필드는 다음과 같다.
 

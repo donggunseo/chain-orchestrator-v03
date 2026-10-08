@@ -15,6 +15,7 @@ from threading import Event
 from uuid import uuid4
 
 from chain_demo.contracts import validate_hitl_request, validate_hitl_decision, validate_hitl_resume_shape
+from chain_demo.hitl_documents import validate_source_documents
 from .presentation import (CONFIRMATION_LABELS, OPTION_LABELS, ROLE_LABELS, label,
                            show_documents, show_evidence)
 
@@ -26,7 +27,11 @@ def _clock():
 def _bundle(record):
     record = copy.deepcopy(record)
     if record.get("status") != "OPEN":raise ValueError("Console requires an open HITL request")
+    if not isinstance(record.get("snapshot"), dict):
+        raise ValueError("HITL 판단 근거 Snapshot이 없거나 형식이 올바르지 않습니다.")
     validate_hitl_request(record["request"], record["snapshot"], record["results"])
+    if "source_documents" in record:
+        validate_source_documents(record["source_documents"], record["request"], record["snapshot"])
     return record
 
 
@@ -52,11 +57,14 @@ def _decision_form(record, write, clock):
     record = show_request(record, write);request = record["request"]
     while True:
         for i, option in enumerate(request["options"], 1):write(f"{i}. {label(option, OPTION_LABELS)}")
-        choice = (yield "선택 번호/코드 (json=고정 근거 전체, docs=고정 문서, q=중단): ").strip()
+        choice = (yield "선택 번호/코드 (json=고정 자료 전체, docs=출처 원문, q=중단): ").strip()
         if choice.lower() == "q":raise KeyboardInterrupt()
         if choice.lower() == "ready":
             write("이미 새 HITL이 열렸습니다. 이 요청의 선택지를 입력해 주세요.");continue
         if choice.lower() == "json":
+            write("[고정 자료 원문] snapshot = 판단 근거 │ " +
+                  ("source_documents = 출처 원문 열람자료" if "source_documents" in record
+                   else "출처 원문 열람자료가 없는 구형 요청"))
             write(json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True));continue
         if choice.lower() == "docs":
             lines = [];show_documents(record, lines.append)

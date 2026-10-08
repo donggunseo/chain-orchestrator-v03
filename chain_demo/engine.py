@@ -20,10 +20,13 @@ digest = canonical_hash
 
 
 class Engine:
-    def __init__(self, bundle, initial, *, now, hitl_resume_enabled=True):
+    def __init__(self, bundle, initial, *, now, hitl_resume_enabled=True, source_documents_enabled=True):
         if type(hitl_resume_enabled) is not bool:
             raise ValueError("hitl_resume_enabled must be bool")
         self.hitl_resume_enabled = hitl_resume_enabled
+        if type(source_documents_enabled) is not bool:
+            raise ValueError("source_documents_enabled must be bool")
+        self.source_documents_enabled = source_documents_enabled
         validate_engine_bundle(bundle)
         self.bundle = copy.deepcopy(bundle)
         self.wf = self.bundle["workflow"]
@@ -366,9 +369,12 @@ class Engine:
                       ("roles", "options", "required_confirmations", "confirmations_on_decisions", "question")}}
         by_id = {r["request_id"]: r for r in results}
         validate_hitl_request(request, snapshot, list(by_id.values()))
-        self.open_hitl[checkpoint] = {"status": "OPEN", "state": self.state, "generation": self.generation,
-                                     "request": request, "snapshot": copy.deepcopy(snapshot),
-                                     "results": copy.deepcopy(list(by_id.values())), "requested_at": self.now}
+        record = {"status": "OPEN", "state": self.state, "generation": self.generation,
+                  "request": request, "snapshot": copy.deepcopy(snapshot),
+                  "results": copy.deepcopy(list(by_id.values())), "requested_at": self.now}
+        if self.source_documents_enabled:
+            record["source_documents"] = self.context.freeze_source_documents(request, snapshot, frozen_at=self.now)
+        self.open_hitl[checkpoint] = record
         self.hitl_history[request["request_id"]]=self.open_hitl[checkpoint]
         self._log("HITL_REQUESTED", checkpoint=checkpoint, request_id=request["request_id"],
                   evidence_snapshot_id=snapshot["snapshot_id"], result_ids=request["result_ids"])

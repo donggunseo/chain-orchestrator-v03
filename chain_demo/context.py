@@ -3,6 +3,7 @@ import copy
 
 from .contracts import make_snapshot
 from .evidence import EvidenceIndex
+from .hitl_documents import freeze_source_documents
 from .source_contracts import identity, validate_completion, validate_initial
 from .validation import canonical_hash, timestamp
 
@@ -31,6 +32,21 @@ class ContextLedger:
 
     def snapshot(self):
         return make_snapshot(self._facts, self._known_at)
+
+    def freeze_source_documents(self, request, snapshot, *, frozen_at):
+        """Freeze exact historical source versions already known at the evidence time."""
+        initial_ref = ("CHAIN_INITIAL", self.identity["episode_id"])
+        initial = self._current[initial_ref]
+        # The creation record is immutable; source dictionary order is irrelevant.
+        initial_facts = initial["facts"]
+        source_records = {(*initial_ref, 1): {"facts": initial_facts,
+            "applied_at": initial_facts["episode_id"]["known_at"]}}
+        for item in self._history:
+            completion = item["completion"]
+            ref = completion["source_ref"]
+            key = (ref["system"], ref["record_id"], ref["version"])
+            source_records.setdefault(key, {"facts": completion["facts"], "applied_at": item["applied_at"]})
+        return freeze_source_documents(request, snapshot, source_records, frozen_at=frozen_at)
 
     def apply(self, completion, *, applied_at):
         validate_completion(completion)

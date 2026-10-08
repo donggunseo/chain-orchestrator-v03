@@ -152,32 +152,66 @@ def show_evidence(record, write):
     # This stable prefix is also used by actual-stdin regression probes.
     write(f"{record['state']} | {request['checkpoint']} | Request ID: {request['request_id']}")
     write("Evidence Snapshot: " + request["evidence_snapshot_id"])
-    write("[이 요청에 고정된 자료 — 이후 실시간 업데이트와 별도로 유지됩니다]")
+    write("[이 요청에 고정된 판단 근거 — 이후 실시간 업데이트와 별도로 유지됩니다]")
     show_facts(record["snapshot"]["facts"], write)
+    if "source_documents" in record:
+        entries = record["source_documents"]["entries"]
+        counts = {status:sum(entry["status"] == status for entry in entries)
+                  for status in ("AVAILABLE", "NO_DOCUMENT", "UNAVAILABLE")}
+        write("[출처 원문 열람자료 — 판단 근거와 구분] " +
+              f"문서 {counts['AVAILABLE']}건 │ 문서가 없는 출처 {counts['NO_DOCUMENT']}건 │ 원문 미확보 {counts['UNAVAILABLE']}건")
     write("─" * 64)
     for output in record["results"]:
         show_agent_result(output, write)
     write("질문: " + safe_text(request["question"]))
-    write("명령: docs = 고정 문서 전문 │ json = 고정 근거 원문 │ q = 입력 중단")
+    write("명령: docs = 고정 출처 원문 │ json = 판단 근거·출처 원문 전체 │ q = 입력 중단")
 
 
 def show_documents(record, write):
+    """Render only the fixed source bundle, with a legacy Snapshot fallback."""
+    if "source_documents" in record:
+        bundle = record["source_documents"]
+        write("[출처 원문 열람자료 — 판단 근거와 구분]")
+        write("자료 ID: " + safe_text(bundle["bundle_id"]))
+        if "frozen_at" in bundle:write("고정 시각: " + _time_text(bundle["frozen_at"]))
+        shown = set()
+        if not bundle["entries"]:
+            write("이 요청의 근거가 참조한 외부 출처 원문이 없습니다.")
+        for entry in bundle["entries"]:
+            ref = entry["source_ref"]
+            key = (ref["system"], ref["record_id"], ref["version"])
+            if key in shown:continue
+            shown.add(key)
+            if entry["status"] == "AVAILABLE":
+                _show_document("출처 원문", "document:" + ref["record_id"], entry["document"], write)
+            else:
+                description = "문서가 없는 출처" if entry["status"] == "NO_DOCUMENT" else "원문 미확보"
+                write("\n[" + description + "] " + source_text(ref))
+                write("상태: " + entry["status"] + " │ 사유: " + safe_text(entry["reason"]))
+            write("참조된 근거 항목: " + ", ".join(label(name) for name in entry["referenced_fields"]))
+        write("json의 snapshot은 판단 근거, source_documents는 고정된 출처 원문 열람자료입니다.")
+        return
     documents = [(name, fact) for name, fact in sorted(record["snapshot"]["facts"].items())
                  if name.startswith("document:")]
+    write("[구형 요청 — 판단 근거 Snapshot에 포함된 문서만 표시]")
     if not documents:
-        write("이 요청의 고정 Snapshot에는 문서가 없습니다.")
+        write("판단 근거 Snapshot은 있습니다. 해당 요청 범위에는 문서 전문이 포함되지 않았습니다.")
     for name, fact in documents:
-        write("\n[고정 문서 전문] " + safe_text(name))
-        write("상태: " + label(fact.get("status", "UNKNOWN"), STATUS_LABELS) +
-              " │ 출처: " + source_text(fact.get("source_ref", {})))
-        write("기록/측정: " + _time_text(fact.get("source_time", "미제공")) +
-              " │ CHAIN 인지: " + _time_text(fact.get("known_at", "미제공")))
-        value = fact.get("value")
-        if isinstance(value, (dict, list)):
-            _show_value("문서", value, write)
-        else:
-            write(safe_text(value_text(value) if value is None else value, multiline=True))
-    write("문서와 근거의 원문 필드는 json 명령으로 확인할 수 있습니다.")
+        _show_document("고정 문서 전문", name, fact, write)
+    write("json으로 이 요청의 판단 근거 원문을 확인할 수 있습니다.")
+
+
+def _show_document(title, name, fact, write):
+    write("\n[" + title + "] " + safe_text(name))
+    write("상태: " + label(fact.get("status", "UNKNOWN"), STATUS_LABELS) +
+          " │ 출처: " + source_text(fact.get("source_ref", {})))
+    write("기록/측정: " + _time_text(fact.get("source_time", "미제공")) +
+          " │ CHAIN 인지: " + _time_text(fact.get("known_at", "미제공")))
+    value = fact.get("value")
+    if isinstance(value, (dict, list)):
+        _show_value("문서", value, write)
+    else:
+        write(safe_text(value_text(value) if value is None else value, multiline=True))
 
 
 def duration(seconds):

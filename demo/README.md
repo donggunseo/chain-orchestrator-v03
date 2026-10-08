@@ -62,12 +62,28 @@ HITL #2의 YES 선택에는 화면에 표시된 네 확인사항을 각각 확�
 
 | 입력 명령 | 화면 동작 |
 |---|---|
-| `docs` | 지금 열린 요청에 고정된 문서 전문 보기 |
-| `json` | 지금 열린 요청의 전체 원문 JSON 보기 |
+| `docs` | 지금 열린 요청의 근거가 참조하는 출처 원문 보기 |
+| `json` | 판단 근거와 출처 원문을 구분한 요청 전체 JSON 보기 |
 | 보류 중 `ready` | 모의 역할·ID를 입력해 같은 HITL의 재요청 전송 |
 | `q` | 결정을 전송하지 않고 데모 입력 종료. Workflow 취소 입력과 구분 |
 
 열린 HITL의 근거는 이후 정보가 추가되어도 그대로 유지된다. 실시간 Event·Agent 결과는 별도로 표시한다.
+
+`docs`는 `source_documents`에 고정한 출처 원문을 보여준다. 판단 Snapshot에 구조화 항목만 들어 있어도
+그 항목이 참조하는 기록·버전의 문서가 보존되어 있다면 원문을 확인할 수 있다.
+문서가 없는 검사 기록은 `NO_DOCUMENT`, 해당 버전의 원문을 사용할 수 없는 출처는 `UNAVAILABLE`로 표시한다.
+원문이 없는 경우에는 해당 기록 미보존·기준 시각 이후 유입·문서 상태나 본문 문제를 사유로 구분한다.
+미확보 상태를 최신 문서로 대체하지 않는다.
+
+`json`의 `snapshot`은 Agent가 판단에 사용한 입력이고, `source_documents`는 별도의 출처 열람자료다.
+원문 열람은 Agent 입력이나 판단 근거를 변경하지 않는다. HOLD 후 `ready`로 새 질문이 열려도 같은 구분을 사용한다.
+새 질문의 Request ID에 연결된 자료를 확인하며, 이전 질문의 자료는 HITL 이력에 남는다.
+
+출처 원문은 판단 Snapshot의 `known_at`까지 알려진 자료 중에서 고정한다.
+`frozen_at`은 열람자료를 고정한 시각이다. 이후 기록 추가로 두 자료를 덮어쓰지 않는다.
+이전 형식의 기록에 `source_documents`가 없으면 미제공으로 표시하고,
+고정 Snapshot에 포함된 문서가 있는 경우에만 그 문서를 보여준다.
+`json`에도 없는 원문을 조회할 수 있다고 안내하지 않는다.
 입력 중에도 자료와 Agent 응답을 계속 처리한다.
 
 S1 진입에서는 EHR 플래그와 대시보드 표시 활성화, 세 준비 알림이 Mock으로 기록된다.
@@ -148,7 +164,7 @@ Service 없이 같은 흐름을 확인하려면 `--backend local`을 사용하�
 | 출력 파일 | 내용 |
 |---|---|
 | `outcome.json` | 실행 성공·실패·중단과 최종 State |
-| `snapshot.json` | 전체 Context, 현재 State 명세·자료요건 표시, State 경로, Agent 결과, HITL·보류·재요청 이력, 표시·취소 receipt와 감사 기록 |
+| `snapshot.json` | 전체 Context, 현재 State 명세·자료요건 표시, State 경로, Agent 결과, HITL의 고정 근거·출처 열람자료·보류·재요청 이력, 표시·취소 receipt와 감사 기록 |
 | `manifest.json` | 실행에 고정한 Workflow·Policy·Registry·구현 버전과 데모 설정 |
 | `commands.jsonl` | 실제 요청·응답과 Temporal Activity의 실행 ID·재시도 횟수 |
 | `publications.json`, `simulation.json` | 자료 공개·Event와 실제 관찰한 가상 병원 기준 사건 |
@@ -183,6 +199,8 @@ Temporal 실행은 종료 시 History를 저장하고 Replay한다. 저장한 Hi
 
 실제 통합은 `chain_demo.worker`와 백엔드의 Signal/Query 계약을 사용한다.
 프론트·백엔드에서 이 데모 콘솔을 호출할 필요는 없다.
+HITL 원문 화면도 같은 `snapshot` Query의 `open_hitl`·`hitl_history`에 있는 `source_documents`를 사용한다.
+원문 계약과 판단 근거의 구분은 [루트 README 5.3절](../README.md#53-hitl-화면과-응답)에 있다.
 `ready`는 공통 재요청 기능의 데모 조작이며, 실제 화면에서는 재요청 버튼을 백엔드 handler에 연결한다.
 handler는 인증된 actor와 이전 보류 Request ID를 담아 `request_hitl_resume` Signal을 보내고,
 `snapshot`의 `hitl_waits`·`hitl_resume_commands`로 수락·준비·오류·새 요청을 조회한다.

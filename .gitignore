@@ -50,6 +50,7 @@
 !/chain_demo/state_specification.py
 !/chain_demo/evidence.py
 !/chain_demo/expressions.py
+!/chain_demo/hitl_documents.py
 !/chain_demo/notifier.py
 !/chain_demo/orchestration_activities.py
 !/chain_demo/orchestration_config.py
