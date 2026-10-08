@@ -127,6 +127,7 @@ class TemporalRuntime:
 
     async def submit_event(self, value): await self.handle.signal("submit_event", value)
     async def submit_decision(self, value): await self.handle.signal("submit_decision", value)
+    async def request_hitl_resume(self, value): await self.handle.signal("request_hitl_resume", value)
     async def request_context(self, value): await self.handle.signal("request_context", value)
 
     async def advance_test_time(self, at):

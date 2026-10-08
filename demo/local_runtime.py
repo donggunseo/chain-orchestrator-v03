@@ -69,6 +69,7 @@ class AsyncLocalRuntime:
 
     async def submit_event(self,event):return await self._submit("external",event)
     async def submit_decision(self,decision):return await self._submit("decision",decision)
+    async def request_hitl_resume(self,request):return await self._submit("hitl_resume",request)
     async def request_context(self,request):return await self._submit("context",request)
 
     async def _run(self):
@@ -78,6 +79,7 @@ class AsyncLocalRuntime:
                 try:
                     if kind=="external":commands=self.engine.receive(value,self.clock.now())
                     elif kind=="decision":commands=self.engine.decide(value,self.clock.now())
+                    elif kind=="hitl_resume":commands=self.engine.request_hitl_resume(value,self.clock.now())
                     elif kind=="context":
                         request=fields(value,{"request_id","scope"},where="Context request")
                         commands=self.engine.request_context(request["request_id"],request["scope"],self.clock.now())
@@ -102,6 +104,11 @@ class AsyncLocalRuntime:
     def _schedule(self,commands):
         self.tasks={key:task for key,task in self.tasks.items() if not task.done()}
         for command in commands:
+            if command["kind"]=="cancel_timer":
+                task=self.tasks.pop(command["timer_id"],None)
+                if task is not None:task.cancel()
+                self._timer_due.pop(command["timer_id"],None)
+                continue
             due=(self.clock.datetime()+timedelta(seconds=command.get("seconds",0)*self.timer_scale)).isoformat()
             if command["kind"]=="timer":self._timer_due[command["id"]]=due
             self.tasks[command["id"]]=asyncio.create_task(self._execute(command,due))

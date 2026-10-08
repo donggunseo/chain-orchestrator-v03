@@ -7,7 +7,7 @@ import copy
 from .agent_requests import make_scoped_job, scope_snapshot
 from .context import ContextLedger
 from .contracts import (validate_event, validate_agent_result, validate_hitl_request,
-                        validate_hitl_decision, validate_hitl_decision_shape)
+                        validate_hitl_decision, validate_hitl_decision_shape, validate_hitl_resume_shape)
 from .expressions import matches, evaluate
 from .effect_contracts import validate_effect_receipt
 from .state_specification import state_specification_view
@@ -20,7 +20,10 @@ digest = canonical_hash
 
 
 class Engine:
-    def __init__(self, bundle, initial, *, now):
+    def __init__(self, bundle, initial, *, now, hitl_resume_enabled=True):
+        if type(hitl_resume_enabled) is not bool:
+            raise ValueError("hitl_resume_enabled must be bool")
+        self.hitl_resume_enabled = hitl_resume_enabled
         validate_engine_bundle(bundle)
         self.bundle = copy.deepcopy(bundle)
         self.wf = self.bundle["workflow"]
@@ -37,6 +40,7 @@ class Engine:
         self.pending, self.timers, self.results, self.agent_outputs, self.agent_runs = {}, {}, {}, {}, {}
         self.context_requests, self.summary_cache, self.open_hitl = {}, {}, {}
         self.hitl_history = {}
+        self.hitl_waits, self.hitl_resume_commands, self._resume_fingerprints = {}, {}, {}
         self._invalidated_evidence = {}
         self._revision_epoch = 0
         self._processed_revisions = set()
@@ -179,6 +183,13 @@ class Engine:
         self.generation += 1
         self.history.append(state)
         self._transition_result = event.get("execution", {}).get("request_id")
+        for wait in self.hitl_waits.values():
+            if wait["status"] != "CLOSED":
+                wait["status"] = "CLOSED"
+                self._cancel_timer(wait["timer_id"])
+                command = self.hitl_resume_commands.get(wait.get("command_id"))
+                if command and command["status"] == "ACCEPTED":
+                    command.update(status="CLOSED", reason="STATE_CHANGED")
         for request in self.open_hitl.values():
             if request["status"] == "OPEN":
                 request["status"] = "CLOSED"
@@ -217,7 +228,17 @@ class Engine:
                 self._queue({"kind": "effect", "id": cid, "job": {"catalog_hash": self.bundle["catalog_hash"],
                              "request": request, "recorded_at": self.now}, "engine_hash": self.bundle["bundle_hash"]})
             elif name == "re_request_hitl_after_min":
-                self._timer("hitl_retry", value*60, checkpoint=event["payload"]["checkpoint"])
+                checkpoint = event["payload"]["checkpoint"]
+                if self.hitl_resume_enabled:
+                    prior = event["payload"]["request_id"]
+                    timer = self._timer("hitl_retry", value*60, checkpoint=checkpoint, prior_request_id=prior)
+                    self.hitl_waits[checkpoint] = {"prior_request_id": prior, "state": self.state,
+                        "generation": self.generation, "status": "WAITING", "timer_id": timer["id"],
+                        "requested_at": self.now, "deadline_reached": False, "attempt": 0}
+                    self._log("HITL_WAIT_STARTED", checkpoint=checkpoint, prior_request_id=prior,
+                              timer_id=timer["id"])
+                else:
+                    self._timer("hitl_retry", value*60, checkpoint=checkpoint)
             elif name in {"record_reason", "record_hold_reason"}:
                 self._log("HITL_REASON_RECORDED", comment=event["payload"]["comment"])
             elif name == "seal_audit_trail":
@@ -243,6 +264,13 @@ class Engine:
             self._summary(consumer, scope_snapshot(self.context.snapshot(), consumer["scope"]), "serve_context")
         elif kind == "hitl":
             cp = consumer["checkpoint"]
+            wait = self.hitl_waits.get(cp)
+            if wait and wait["generation"] == self.generation and wait["status"] in {"WAITING", "REOPENING", "FAILED"}:
+                if wait["status"] != "REOPENING" or consumer.get("resume_token") != wait.get("resume_token"):
+                    return
+                if any(seq <= wait["through_sequence"] for seq in self._source_positions.values()):
+                    self._defer(consumer)
+                    return
             if self.open_hitl.get(cp, {}).get("status") == "OPEN":
                 return
             after = self.wf["hitl_checkpoints"][cp]["after"]
@@ -250,6 +278,19 @@ class Engine:
             if not record or (record["generation"] != self.generation and
                               record["output"]["request_id"] != self._transition_result):
                 self._defer(consumer)
+                if consumer.get("resume_token"):
+                    alias, _, mode = after.rpartition(".")
+                    latest = self.pending.get(self._latest.get(after))
+                    if not latest or latest["generation"] != self.generation:
+                        self._consume({"kind": "agent", "alias": alias, "mode": mode,
+                                       "generation": self.generation})
+                return
+            if consumer.get("resume_token") and any(
+                    command.get("purpose") == "prepare_hitl" and any(
+                        prepared["consumer"].get("resume_token") == consumer["resume_token"] and
+                        prepared["after_id"] == record["output"]["request_id"]
+                        for prepared in command["consumers"])
+                    for command in self.pending.values()):
                 return
             self._summary(consumer, record["snapshot"], "prepare_hitl",
                           after=after, after_id=record["output"]["request_id"])
@@ -298,11 +339,17 @@ class Engine:
             self._log("STRUCTURED_CONTEXT_SERVED", request_id=consumer["request_id"],
                       input_snapshot_id=record["snapshot"]["snapshot_id"])
         elif purpose == "prepare_hitl":
+            if consumer.get("resume_token"):
+                wait = self.hitl_waits.get(consumer["checkpoint"], {})
+                if wait.get("status") != "REOPENING" or wait.get("resume_token") != consumer["resume_token"]:
+                    return
             after = self.results.get(prepared["after"])
             if not after or after["output"]["request_id"] != prepared["after_id"]:
                 self._consume(consumer)
                 return
             self._open_hitl(consumer["checkpoint"], after, record)
+            if consumer.get("resume_token"):
+                self._finish_hitl_resume(consumer["checkpoint"])
 
     def _open_hitl(self, checkpoint, after, summary):
         if self.open_hitl.get(checkpoint, {}).get("status") == "OPEN":
@@ -377,6 +424,120 @@ class Engine:
             self._deferred_decisions.pop(0)
             self._decide_now(item["decision"])
 
+    def request_hitl_resume(self, request, now):
+        """Shared Client input. Request readiness never selects a clinical decision."""
+        self._time(now)
+        try:
+            validate_hitl_resume_shape(request)
+        except ValueError as exc:
+            self._reject_input("HITL_RESUME_REJECTED", str(exc),
+                command_id=request.get("command_id") if isinstance(request, dict) else None)
+            return self._commands()
+        command_id, fingerprint = request["command_id"], digest(request)
+        if command_id in self._resume_fingerprints:
+            if self._resume_fingerprints[command_id] == fingerprint:
+                self._log("HITL_RESUME_DUPLICATE", command_id=command_id)
+            else:
+                self._reject_input("HITL_RESUME_REJECTED", "Conflicting resume command ID", command_id=command_id)
+            return self._commands()
+        self._resume_fingerprints[command_id] = fingerprint
+        outcome = {"command_id": command_id, "prior_request_id": request["prior_request_id"], "status": "REJECTED"}
+        self.hitl_resume_commands[command_id] = outcome
+        try:
+            if not self.hitl_resume_enabled or self.terminal:
+                raise ValueError("This execution does not accept HITL resume")
+            record = self.hitl_history.get(request["prior_request_id"])
+            if not record or record["status"] != "DECIDED" or record["generation"] != self.generation:
+                raise ValueError("No matching deferred HITL request")
+            checkpoint = record["request"]["checkpoint"]
+            wait = self.hitl_waits.get(checkpoint)
+            if (not wait or wait["prior_request_id"] != request["prior_request_id"] or
+                    wait["generation"] != self.generation or wait["status"] not in {"WAITING", "FAILED"}):
+                raise ValueError("No matching resumable HITL wait")
+            role = request["actor"]["role"]
+            if role not in record["request"]["roles"] or role not in self.policy["hitl_rules"][checkpoint]["roles"]:
+                raise ValueError("Policy role denied")
+            if not timestamp(wait["requested_at"]) <= timestamp(request["requested_at"]) <= timestamp(now):
+                raise ValueError("Resume timestamp outside its wait interval")
+        except ValueError as exc:
+            outcome["reason"] = safe_audit_reason(str(exc))
+            self._reject_input("HITL_RESUME_REJECTED", str(exc), command_id=command_id,
+                               prior_request_id=request["prior_request_id"])
+        else:
+            outcome.update(status="ACCEPTED", checkpoint=checkpoint, accepted_at=self.now)
+            self._log("HITL_RESUME_ACCEPTED", **request)
+            self._begin_hitl_resume(checkpoint, command_id=command_id)
+        return self._commands()
+
+    def _resume_consumer(self, checkpoint):
+        wait = self.hitl_waits[checkpoint]
+        return {"kind": "hitl", "checkpoint": checkpoint, "generation": self.generation,
+                "resume_token": wait["resume_token"]}
+
+    def _begin_hitl_resume(self, checkpoint, *, command_id=None):
+        wait = self.hitl_waits[checkpoint]
+        if wait["status"] not in {"WAITING", "FAILED"}:
+            return
+        wait.update(status="REOPENING", command_id=command_id, through_sequence=self._sequence,
+                    attempt=wait["attempt"] + 1)
+        wait["resume_token"] = f"{wait['prior_request_id']}:{wait['attempt']}"
+        wait.pop("error", None)
+        self._consume(self._resume_consumer(checkpoint))
+
+    def _finish_hitl_resume(self, checkpoint):
+        wait = self.hitl_waits[checkpoint]
+        record = self.open_hitl.get(checkpoint, {})
+        if record.get("status") != "OPEN" or wait["status"] != "REOPENING":
+            return
+        wait.update(status="OPEN", new_request_id=record["request"]["request_id"])
+        self._cancel_timer(wait["timer_id"])
+        command = self.hitl_resume_commands.get(wait.get("command_id"))
+        if command:
+            command.update(status="OPEN", new_request_id=wait["new_request_id"])
+        self.waiters = [w for w in self.waiters if w.get("resume_token") != wait["resume_token"]]
+        self._log("HITL_RESUME_OPENED", checkpoint=checkpoint, prior_request_id=wait["prior_request_id"],
+                  command_id=wait.get("command_id"), new_request_id=wait["new_request_id"])
+
+    def _flush_hitl_resumes(self):
+        for checkpoint, wait in list(self.hitl_waits.items()):
+            if wait["generation"] == self.generation and wait["status"] == "REOPENING":
+                self._consume(self._resume_consumer(checkpoint))
+
+    def _fail_hitl_preparation(self, command, reason):
+        checkpoints = set()
+        for prepared in command.get("consumers", []):
+            consumer = prepared.get("consumer", prepared)
+            if consumer.get("resume_token"):
+                wait = self.hitl_waits.get(consumer["checkpoint"], {})
+                if wait.get("resume_token") == consumer["resume_token"]:
+                    checkpoints.add(consumer["checkpoint"])
+        if command["purpose"] == "agent" and self._latest.get(f"{command['alias']}.{command['mode']}") == command["id"]:
+            reference = f"{command['alias']}.{command['mode']}"
+        elif command["purpose"] == "prepare_agent":
+            reference = None
+            for prepared in command["consumers"]:
+                consumer = prepared["consumer"]
+                reference = f"{consumer['alias']}.{consumer['mode']}"
+                checkpoints.update(cp for cp, wait in self.hitl_waits.items()
+                    if self.wf["hitl_checkpoints"][cp]["after"] == reference and reference not in self.results)
+        else:
+            reference = None
+        if reference:
+            checkpoints.update(cp for cp in self.hitl_waits
+                if self.wf["hitl_checkpoints"][cp]["after"] == reference and reference not in self.results)
+        for checkpoint in sorted(checkpoints):
+            wait = self.hitl_waits[checkpoint]
+            if wait["generation"] != self.generation or wait["status"] != "REOPENING":
+                continue
+            wait.update(status="FAILED", error=safe_audit_reason(reason), failed_agent_request_id=command["id"])
+            outcome = self.hitl_resume_commands.get(wait.get("command_id"))
+            if outcome:
+                outcome.update(status="FAILED", error=wait["error"])
+            self.waiters = [w for w in self.waiters if w.get("resume_token") != wait["resume_token"]]
+            self._log("HITL_RESUME_FAILED", checkpoint=checkpoint, command_id=wait.get("command_id"),
+                      prior_request_id=wait["prior_request_id"], agent_request_id=command["id"],
+                      retryable_preparation=command["purpose"] != "agent", reason=wait["error"])
+
     def request_context(self, request_id, scope, now):
         self._time(now)
         if not self.terminal:
@@ -395,6 +556,11 @@ class Engine:
                  "generation": self.generation, **extra}
         self.timers[timer["id"]] = copy.deepcopy(timer)
         self.out.append(timer)
+        return timer
+
+    def _cancel_timer(self, timer_id):
+        if self.timers.pop(timer_id, None) is not None:
+            self.out.append({"kind": "cancel_timer", "id": self._id("timer_cancel"), "timer_id": timer_id})
 
     def timer_fired(self, timer, now):
         self._time(now)
@@ -402,7 +568,14 @@ class Engine:
         if original != timer or timer["generation"] != self.generation or self.terminal:
             return self._commands()
         if timer["purpose"] == "hitl_retry":
-            self._consume({"kind": "hitl", "checkpoint": timer["checkpoint"], "generation": self.generation})
+            if self.hitl_resume_enabled:
+                wait = self.hitl_waits.get(timer["checkpoint"])
+                if not wait or wait["timer_id"] != timer["id"] or wait["prior_request_id"] != timer["prior_request_id"]:
+                    return self._commands()
+                wait["deadline_reached"] = True
+                self._begin_hitl_resume(timer["checkpoint"])
+            else:
+                self._consume({"kind": "hitl", "checkpoint": timer["checkpoint"], "generation": self.generation})
         else:
             self._log("STATE_TIMEOUT", auto_transition=False)
             timeout = self.wf["states"][self.state]["timeout"]
@@ -473,6 +646,7 @@ class Engine:
                     # Internal routing view; the admitted wire Event remains untouched.
                     self._dispatch({**command["event"], "payload": copy.deepcopy(completion["payload"])})
             self._flush_decisions()
+            self._flush_hitl_resumes()
 
     def _apply_revision(self,completion):
         key=digest({"ref":completion["source_ref"],"hash":completion["content_hash"]})
@@ -513,7 +687,9 @@ class Engine:
                         reconfirm.add(consumer["checkpoint"])
         for checkpoint in sorted(reconfirm):
             self._consume({"kind":"hitl","checkpoint":checkpoint,"generation":self.generation})
-        retry={t["checkpoint"] for t in self.timers.values() if t["purpose"]=="hitl_retry" and t["generation"]==self.generation}
+        retry = ({cp for cp, wait in self.hitl_waits.items() if wait["generation"] == self.generation and
+                  wait["status"] in {"WAITING", "REOPENING", "FAILED"}} if self.hitl_resume_enabled else
+                 {t["checkpoint"] for t in self.timers.values() if t["purpose"]=="hitl_retry" and t["generation"]==self.generation})
         for checkpoint in sorted(reconfirm|retry):
             after=self.wf["hitl_checkpoints"][checkpoint]["after"]
             if after in invalid_results:
@@ -535,7 +711,28 @@ class Engine:
             if command["purpose"] != "agent" and reply["result"]["structured_context"] != command["job"]["snapshot"]["facts"]:
                 raise ValueError("Structured Context exceeds/changes requested source scope")
         except (ValueError, KeyError, TypeError) as exc:
+            if self.hitl_resume_enabled and (
+                    command["generation"] != self.generation or
+                    any(self._invalidated_evidence.get(digest(ref), 0) > command["revision_epoch"]
+                        for ref in command["job"]["request"]["dependencies"]) or
+                    (command["purpose"] != "prepare_hitl" and scope_snapshot(
+                        self.context.snapshot(), command["job"]["request"]["scope"])["snapshot_id"] !=
+                        command["job"]["request"]["input_snapshot_id"]) or
+                    (command["purpose"] == "agent" and self._latest.get(
+                        f"{command['alias']}.{command['mode']}") != command["id"]) or
+                    (command["purpose"] == "prepare_hitl" and all(
+                        self.results.get(prepared["after"], {}).get("output", {}).get("request_id") != prepared["after_id"]
+                        for prepared in command["consumers"]))):
+                # An obsolete preparation's error cannot fail the replacement
+                # request. Record the error without accepting its output.
+                self._log("STALE_RESULT_DISCARDED", request_id=command["id"],
+                          reason="STALE_PREPARATION_FAILURE", error=safe_audit_reason(str(exc)))
+                if command["purpose"] != "agent":
+                    for prepared in command["consumers"]:
+                        self._consume(prepared["consumer"])
+                return
             self._log("AGENT_FAILED_OR_REJECTED", request_id=command["id"], reason=str(exc))
+            self._fail_hitl_preparation(command, str(exc))
             return
         reason = None
         if any(self._invalidated_evidence.get(digest(ref),0)>command["revision_epoch"]
@@ -591,6 +788,8 @@ class Engine:
             "notifications": self.notifications, "audit": self.audit, "pending_count": len(self.pending),
             "unresolved_count": len(self._source_order), "waiter_count": len(self.waiters), "done": self.done,
             "bundle_hash": self.bundle["bundle_hash"], "run_manifest": self.bundle["run_manifest"]}
+        if self.hitl_resume_enabled:
+            result.update(hitl_waits=self.hitl_waits, hitl_resume_commands=self.hitl_resume_commands)
         if "allowed_effect_operations" in self.policy:
             result["effects"]=self.effects
         if self.state and "specification" in self.wf["states"][self.state]:

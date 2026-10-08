@@ -19,10 +19,10 @@ implementations:
       chain_demo/validation.py: sha256:be81f41f6a000b094099a06c227b316537c109c54a9c947a0070cf4964749bbd
       chain_demo/agents/fixture_backend.py: sha256:1f312d05eb3b5da38065d2ba8d2b417adb9e69ca26c225fc62ff67f1aa44e4b9
       chain_demo/agent_requests.py: sha256:6f7982d8b5804bd9e25ed2e03f8096962f851793c5b18f00321ba93b2a5aef76
-      chain_demo/contracts.py: sha256:448e945fc4e941999e11a71c338aa55a42ae0027fcd51b243d6c58d632567878
+      chain_demo/contracts.py: sha256:d57eefb19345f9813b518a8a32b2f0bd2eaae971de3f4d65fd2762d87e47e96a
       chain_demo/data_io.py: sha256:4197fa78a99f006a179549c14d846c62519fa21cd15597a22c479034f359ddec
       chain_demo/agents/clinical_summary.py: sha256:a5b46f89f974ed526cda2803ae748d597aff2be204c0f9820a7defc370dc5c22
-    manifest_hash: sha256:d6c48c39fe97becd3cb6f5f7504ca3247af29e0453bcb926b5db9c48544c8c03
+    manifest_hash: sha256:a0dc5126ddccd86543fef6ca951804ce14fbbfc84705773097f502b33b18251f
   v03-screening:
     version: step7-mock1
     entrypoint: chain_demo.agents.stroke_screening:invoke
@@ -42,7 +42,7 @@ implementations:
       chain_demo/validation.py: sha256:be81f41f6a000b094099a06c227b316537c109c54a9c947a0070cf4964749bbd
       chain_demo/agents/fixture_backend.py: sha256:1f312d05eb3b5da38065d2ba8d2b417adb9e69ca26c225fc62ff67f1aa44e4b9
       chain_demo/agent_requests.py: sha256:6f7982d8b5804bd9e25ed2e03f8096962f851793c5b18f00321ba93b2a5aef76
-      chain_demo/contracts.py: sha256:448e945fc4e941999e11a71c338aa55a42ae0027fcd51b243d6c58d632567878
+      chain_demo/contracts.py: sha256:d57eefb19345f9813b518a8a32b2f0bd2eaae971de3f4d65fd2762d87e47e96a
       chain_demo/data_io.py: sha256:4197fa78a99f006a179549c14d846c62519fa21cd15597a22c479034f359ddec
       chain_demo/agents/stroke_screening.py: sha256:93fc9027446bff1a5dd61ddd37ea0d47c0b5964939303f3f57fd1c401402e58e
       episodes/stroke_reference_001_v03/fixtures/cli/manifest.json: sha256:fcb9c09072b418a29952ddc82472f3ba573536ef721d6fa32b284e5eb0ef3425
@@ -83,7 +83,7 @@ implementations:
       episodes/stroke_reference_001_v03/fixtures/cli/outputs/tpa-interim-after-order.json: sha256:98c31f762e409253cab643f37badffcc587c35347f8d341f5a4ed655475aabcf
       episodes/stroke_reference_001_v03/fixtures/cli/outputs/tpa-interim-before-order.json: sha256:d72c13b08feab1847c392d8b97aa7bab5230e5e4174e0a7dc0813ded8fe261aa
       episodes/stroke_reference_001_v03/fixtures/cli/provenance.json: sha256:64d4f14d1f06088da42447d30db256ffa0eef1effdb12cb9048f02ef6a6efd9a
-    manifest_hash: sha256:98f8bb5b5617d062319925705a6bd1c2ab0b7b2c55fd8b82069df6edfd00515c
+    manifest_hash: sha256:40ebc22c6644e711078110a1548f49aa1b54ac0021dd3c788716f763bae98518
   v03-decision-support:
     version: step7-mock1
     entrypoint: chain_demo.agents.tpa_decision_support:invoke
@@ -103,7 +103,7 @@ implementations:
       chain_demo/validation.py: sha256:be81f41f6a000b094099a06c227b316537c109c54a9c947a0070cf4964749bbd
       chain_demo/agents/fixture_backend.py: sha256:1f312d05eb3b5da38065d2ba8d2b417adb9e69ca26c225fc62ff67f1aa44e4b9
       chain_demo/agent_requests.py: sha256:6f7982d8b5804bd9e25ed2e03f8096962f851793c5b18f00321ba93b2a5aef76
-      chain_demo/contracts.py: sha256:448e945fc4e941999e11a71c338aa55a42ae0027fcd51b243d6c58d632567878
+      chain_demo/contracts.py: sha256:d57eefb19345f9813b518a8a32b2f0bd2eaae971de3f4d65fd2762d87e47e96a
       chain_demo/data_io.py: sha256:4197fa78a99f006a179549c14d846c62519fa21cd15597a22c479034f359ddec
       chain_demo/agents/tpa_decision_support.py: sha256:fcce161191c02d7632e90e30c3376cf5a58f0d7a4e47c6dab8f5b06c3d030a0b
       episodes/stroke_reference_001_v03/fixtures/cli/manifest.json: sha256:fcb9c09072b418a29952ddc82472f3ba573536ef721d6fa32b284e5eb0ef3425
@@ -144,4 +144,4 @@ implementations:
       episodes/stroke_reference_001_v03/fixtures/cli/outputs/tpa-interim-after-order.json: sha256:98c31f762e409253cab643f37badffcc587c35347f8d341f5a4ed655475aabcf
       episodes/stroke_reference_001_v03/fixtures/cli/outputs/tpa-interim-before-order.json: sha256:d72c13b08feab1847c392d8b97aa7bab5230e5e4174e0a7dc0813ded8fe261aa
       episodes/stroke_reference_001_v03/fixtures/cli/provenance.json: sha256:64d4f14d1f06088da42447d30db256ffa0eef1effdb12cb9048f02ef6a6efd9a
-    manifest_hash: sha256:946be49fe2b4038f7813c29bc10a17e497233fbc8a0b43270a89c680c106a260
+    manifest_hash: sha256:4a3126986da5a69c9254e3058c3594a3a95939c96fb3891f7291b38874b00501

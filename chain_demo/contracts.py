@@ -198,6 +198,20 @@ def validate_hitl_request(request, snapshot, results):
             raise ValueError("HITL dependencies omit Agent evidence")
 
 
+def validate_hitl_resume_shape(request):
+    """Request a new question for a recorded hold; this is not a decision."""
+    json_value(request, "HITL Resume")
+    fields(request, {"contract_schema", "command_id", "prior_request_id", "actor", "requested_at"},
+           where="HITL Resume")
+    _schema(request, "chain-hitl-resume/v0.3")
+    text(request["command_id"], "command_id")
+    text(request["prior_request_id"], "prior_request_id")
+    fields(request["actor"], {"role", "staff_id"}, where="actor")
+    text(request["actor"]["role"])
+    text(request["actor"]["staff_id"])
+    timestamp(request["requested_at"])
+
+
 def validate_hitl_decision_shape(decision):
     """Check wire shape before queuing; fixed-evidence semantics are checked later."""
     json_value(decision, "HITL Decision")

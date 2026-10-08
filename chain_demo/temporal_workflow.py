@@ -28,6 +28,11 @@ class ConfigurableClinicalWorkflow:
         self.inbox.append({"kind": "decision", "decision": decision})
 
     @workflow.signal
+    def request_hitl_resume(self, request: dict):
+        """Queue a resume command; transport delivery is not Engine acceptance."""
+        self.inbox.append({"kind": "hitl_resume", "request": request})
+
+    @workflow.signal
     def request_context(self, request: dict):
         self.inbox.append({"kind": "context", "request": request})
 
@@ -57,7 +62,11 @@ class ConfigurableClinicalWorkflow:
                 self.test_now = argument["test_now"]
             self.timer_scale = argument.get("test_timer_scale", 1.0)
             positive(self.timer_scale)
-            self.engine = Engine(argument["bundle"], argument["initial"], now=self._now())
+            # The reducer preserves prior timer/request behavior when replaying
+            # a history that predates the resume primitive.
+            resume_enabled = workflow.patched("chain-hitl-resume-v1")
+            self.engine = Engine(argument["bundle"], argument["initial"], now=self._now(),
+                                 hitl_resume_enabled=resume_enabled)
             self._schedule(self.engine.start(self._now()))
         except (ValueError, KeyError, TypeError) as exc:
             raise ApplicationError(f"Invalid v0.3 startup: {exc}", non_retryable=True) from exc
@@ -70,6 +79,8 @@ class ConfigurableClinicalWorkflow:
                     commands = self.engine.receive(message["event"], self._now())
                 elif kind == "decision":
                     commands = self.engine.decide(message["decision"], self._now())
+                elif kind == "hitl_resume":
+                    commands = self.engine.request_hitl_resume(message["request"], self._now())
                 elif kind == "context":
                     try:
                         request = fields(message["request"], {"request_id", "scope"}, where="Context signal")
@@ -107,6 +118,11 @@ class ConfigurableClinicalWorkflow:
     def _schedule(self, commands):
         self.tasks = {key:task for key,task in self.tasks.items() if not task.done()}
         for command in commands:
+            if command["kind"] == "cancel_timer":
+                task = self.tasks.pop(command["timer_id"], None)
+                if task is not None:
+                    task.cancel()
+                continue
             self.tasks[command["id"]] = asyncio.create_task(self._execute(command))
 
     async def _execute(self, command):

@@ -4,10 +4,7 @@ import asyncio
 import copy
 from datetime import datetime,timezone
 import json
-import os
 from pathlib import Path
-import select
-import sys
 from threading import Event, RLock
 from uuid import uuid4
 
@@ -15,7 +12,7 @@ from chain_demo.adapters.store import PublishedStore
 from chain_demo.agents.runtime import AgentRuntime
 from chain_demo.config import ROOT
 from chain_demo.data_io import load_initial
-from .console import serve_console
+from .console import serve_console, StdinReader
 from .local_runtime import AsyncLocalRuntime
 from .presentation import DemoPresenter, safe_text
 from chain_demo.notifier import MockNotifier
@@ -52,8 +49,24 @@ class DemoOutput:
                            " | "+safe_text(receipt["request_id"]))
             except (ValueError,KeyError,TypeError):pass
         elif value.startswith("TEST_CLOCK_AT | "):
-            value+=" | 가상 에피소드 시계 · Temporal 타이머는 별도 실제 시간"
+            value+=" | 가상 에피소드 시계"
         with self.lock:self.write(value)
+
+
+def execution_failures(snapshot):
+    """Retain audit evidence while allowing a declared HITL Summary retry.
+
+    Only the engine's exact preparation failure annotation grants this recovery;
+    source failures and required Agent/fixture failures remain fatal to the demo.
+    """
+    audit = snapshot.get("audit", [])
+    recoverable = {event["agent_request_id"] for event in audit
+        if event.get("type") == "HITL_RESUME_FAILED" and event.get("retryable_preparation") is True
+        and isinstance(event.get("agent_request_id"), str) and event["agent_request_id"]}
+    kinds = {"AGENT_FAILED_OR_REJECTED", "CONTEXT_RESOLUTION_FAILED",
+             "NOTIFICATION_FAILED_OR_REJECTED", "EFFECT_FAILED_OR_REJECTED"}
+    return [event for event in audit if event.get("type") in kinds
+        and not (event["type"] == "AGENT_FAILED_OR_REJECTED" and event.get("request_id") in recoverable)]
 
 
 async def watch_timers(runtime,view,*,write,poll_interval=.1):
@@ -67,25 +80,6 @@ async def watch_timers(runtime,view,*,write,poll_interval=.1):
             elif last_error:write("TIMER_OBSERVATION_RESUMED | 실제 타이머 상태 조회 재개")
             last_error=error
         await asyncio.sleep(poll_interval)
-
-
-class StdinReader:
-    """Selectable pipe/TTY input with cancellation; never blocks executor shutdown."""
-    def __init__(self,stop,write):self.stop=stop;self.write=write;self.buffer=b"";self.eof=False
-    def __call__(self,prompt):
-        self.write(prompt)
-        while not self.stop.is_set():
-            if b"\n" in self.buffer:
-                line,self.buffer=self.buffer.split(b"\n",1);return line.decode(sys.stdin.encoding or "utf8").rstrip("\r")
-            if self.eof:
-                if self.buffer:
-                    line,self.buffer=self.buffer,b"";return line.decode(sys.stdin.encoding or "utf8")
-                raise EOFError
-            if select.select([sys.stdin.fileno()],[],[],.1)[0]:
-                data=os.read(sys.stdin.fileno(),4096)
-                if data:self.buffer+=data
-                else:self.eof=True
-        raise EOFError
 
 
 class JournalActivities:
@@ -174,6 +168,7 @@ async def run(args,*,write=print,input_fn=None):
                         timings=driver["responses"] if driver else (),anchors=lambda:hospital.scheduler.anchors,write=write))
                 else:
                     human=asyncio.create_task(serve_console(runtime.snapshot,runtime.submit_decision,
+                        resume=runtime.request_hitl_resume,
                         input_fn=input_fn or StdinReader(stop,write),write=write,clock=clock.now,poll_interval=.005,
                         on_request=client_requests.append))
                 tasks.append(human)
@@ -185,7 +180,7 @@ async def run(args,*,write=print,input_fn=None):
                         while True:
                             snapshot=await runtime.snapshot()
                             presenter.observe(snapshot,timers=timer_views)
-                            failures=[e for e in snapshot["audit"] if e["type"] in {"AGENT_FAILED_OR_REJECTED","CONTEXT_RESOLUTION_FAILED","NOTIFICATION_FAILED_OR_REJECTED","EFFECT_FAILED_OR_REJECTED"}]
+                            failures=execution_failures(snapshot)
                             if failures or hospital.failures or hospital.scheduler.failures:
                                 raise RuntimeError(json.dumps(failures+hospital.failures+hospital.scheduler.failures,ensure_ascii=False))
                             for task in tasks:

@@ -27,7 +27,7 @@ Temporal Client의 Workflow 시작·Signal·Query를 사용한다.
 | Episode 생성·상태 조회 | [temporal_workflow.py](chain_demo/temporal_workflow.py), [source_contracts.py](chain_demo/source_contracts.py) | 초기 입력 검증, `start_workflow()`, `snapshot` Query |
 | Event 수신·자료 조회 | [adapters/ingress.py](chain_demo/adapters/ingress.py), [contracts.py](chain_demo/contracts.py) | `SourceIngress.receive()`, `submit_event` Signal, `resolve_source()` |
 | 원천자료 수집·버전 저장 | [adapters/](chain_demo/adapters/), [source_contracts.py](chain_demo/source_contracts.py) | 출처별 `publish()`, Store의 `publish()/resolve()`, 공유·영속 저장소 연결 |
-| HITL 화면·결정 응답 | [contracts.py](chain_demo/contracts.py), [temporal_workflow.py](chain_demo/temporal_workflow.py) | 고정 근거 표시, 결정·역할·확인사항 검증, `submit_decision` Signal |
+| HITL 화면·결정·재요청 | [contracts.py](chain_demo/contracts.py), [temporal_workflow.py](chain_demo/temporal_workflow.py) | 고정 근거 표시, 결정·역할·확인사항 검증, `submit_decision`·`request_hitl_resume` Signal |
 | Agent 구현·API 호출 | [stroke_screening.py](chain_demo/agents/stroke_screening.py), [tpa_decision_support.py](chain_demo/agents/tpa_decision_support.py), [agents/runtime.py](chain_demo/agents/runtime.py) | 등록 모듈의 `invoke(request, snapshot, services)` 구현 |
 | Context 구조화·캐시 | [clinical_summary.py](chain_demo/agents/clinical_summary.py), [agents/services.py](chain_demo/agents/services.py) | 요청 범위 구조화, Snapshot·scope·구현 버전별 캐시 |
 | Agent 등록·호출 설정 | [agents_v03.yaml](config/agents_v03.yaml), [plugins.yaml](config/plugins.yaml), [policy_v03.yaml](config/policy_v03.yaml), [workflow_v03.yaml](config/workflow_v03.yaml) | 구현·버전·권한·mode·입출력·호출 시점 등록 |
@@ -85,7 +85,7 @@ flowchart TB
 
 Workflow와 Activity는 Worker에서 실행한다. Temporal Service는 실행 이력, Task Queue와 Timer를 관리한다.
 백엔드가 Episode별 Workflow를 시작하면 Engine이 생성된다.
-Event와 의료진 결정은 Signal로 입력하고, 상태와 근거는 Query로 조회한다.
+Event·의료진 결정·보류 재요청은 Signal로 입력하고, 상태와 근거는 Query로 조회한다.
 
 ## 3. 설치와 Worker 실행
 
@@ -204,7 +204,7 @@ episodes/stroke_reference_001_v03/
 | 옵션 | 동작 |
 |---|---|
 | `--test-mode` | 합성 에피소드의 가상 시계 사용 |
-| `--test-timer-scale 0.01` | Workflow 타이머를 100배 단축. 10분 재요청 타이머는 실제 6초 |
+| `--test-timer-scale 0.1` | Workflow 타이머를 10배 단축. 10분 재요청 타이머는 실제 1분 |
 | `--run-timeout 1800` | 최대 30분 실행. 시간 초과 시 부분 결과 보존 |
 | `--output-dir` | 실행 결과 저장 경로. 실행마다 새 경로 지정 |
 
@@ -234,14 +234,20 @@ YES에는 설정된 네 확인사항이 필요하다: `NCCT_NO_HEMORRHAGE_PHYSIC
 |---|---|
 | Screening NEGATIVE | S0X에서 경로 종료. 선택한 합성 입력을 지원하는 fixture가 있어야 함 |
 | HITL #1 `NOT_STROKE_PATHWAY` | S1X에서 S1의 EHR 플래그·대시보드 표시를 취소하고 세 준비 취소 알림을 Mock 기록한 뒤 경로 종료 |
-| HITL #1 `DEFER` | S1 유지 → 재요청 타이머 → 새 HITL #1 요청 |
-| HITL #2 `HOLD` | S2_1 유지 → 재요청 타이머 → 새 HITL #2 요청 |
+| HITL #1 `DEFER` | S1 유지 → 타이머 만료 또는 의료진의 재요청 → 새 HITL #1 준비 |
+| HITL #2 `HOLD` | S2_1 유지 → 타이머 만료 또는 의료진의 재요청 → 새 HITL #2 준비 |
+| 보류 중 `ready` | 모의 역할·ID를 입력해 재요청 전송. 근거 준비가 끝나면 결정 화면 표시 |
 | `docs` / `json` | 현재 요청에 고정된 문서 전문 / 전체 근거 JSON 보기 |
-| `q` | 결정을 생성하지 않고 콘솔 입력 종료. 부분 결과 저장 |
+| `q` | 결정을 생성하지 않고 콘솔 입력 종료. 부분 결과 저장. Workflow 취소 명령과 구분 |
 
 HOLD/DEFER 후에는 현재 State와 재요청 타이머가 표시된다. 남은 시간은 실제 Temporal 경과시간을 기준으로 하며,
 History에서 Timer 발생이 확인될 때까지 0초는 만료 처리 대기로 표시한다.
-재요청에는 새 Request ID를 사용한다. 일반 자료 추가는 열린 HITL의 고정 근거를 유지한다.
+보류 중에도 병원 Event와 Agent 응답을 처리하며, 일반 자료 수신만으로 보류를 해제하지 않는다.
+`ready`는 공통 재요청 계약을 호출하는 데모 입력이다. 실제 화면의 연결은 [5.3절](#53-hitl-화면과-응답)에 있다.
+재요청은 결정 제출과 별개이며 현재 State를 유지한다. 근거가 준비되면 새 Request ID와 고정 Snapshot으로 결정한다.
+준비 중에는 같은 재요청을 중복 실행하지 않고, 새 HITL이 열릴 때 기존 재요청 타이머를 정리한다.
+준비 실패는 화면에 표시하고 아직 만료되지 않은 자동 재요청 타이머를 유지한다.
+타이머가 이미 만료된 경우에는 새 재요청으로 다시 준비한다. 일반 자료 추가는 열린 HITL의 고정 근거를 유지한다.
 
 준비 취소 알림은 종료를 알리는 별도 요청이다. 기존 메시지를 회수하지 않는다.
 표시·취소와 알림은 Mock 기록만 남긴다. Summary 준비 실패 시 HITL은 열리지 않으며,
@@ -411,6 +417,8 @@ PY
 
 Worker와 백엔드는 같은 실행 설정, Task Queue와 namespace를 사용한다.
 설정·구현 버전은 실행별로 고정한다. 새 버전은 새 Queue/Worker로 배포하고 진행 중 실행의 구성은 유지한다.
+보류 재요청 기능은 새 실행에서 적용한다. Workflow의 `chain-hitl-resume-v1` patch로 이전 History의
+타이머·결정 처리 순서를 유지하며, 과거 실행을 새 동작으로 임의 전환하지 않는다.
 
 ### 5.2. 백엔드 API 내부의 호출
 
@@ -422,6 +430,7 @@ Worker와 백엔드는 같은 실행 설정, Task Queue와 namespace를 사용�
 | Episode 생성 | 초기 8필드 검증 → Workflow 시작 → Workflow ID 보존 |
 | 새 기록·검사 Event | 자료 공개 → Ingress 검증 → `submit_event` |
 | 의료진 결정 | 로그인 사용자·역할 확인 → 응답 검증 → `submit_decision` |
+| 보류된 HITL 재요청 | 로그인 사용자·역할과 대상 보류 확인 → `request_hitl_resume` → 처리 상태 조회 |
 | 범위별 Context 요청 | 요청 ID·scope를 지정해 `request_context` |
 | 상태 조회 | `snapshot` Query → 프론트엔드에 전달 |
 
@@ -434,13 +443,17 @@ await handle.signal("submit_event", accepted_event)
 # 고정된 HITL 요청을 참조하는 의료진 응답
 await handle.signal("submit_decision", decision)
 
+# 현재 보류를 참조하는 재요청. 입력 형식은 5.3절 참고
+await handle.signal("request_hitl_resume", resume_command)
+
 # 필요한 항목만 구조화 요청
 await handle.signal("request_context", {"request_id": request_id, "scope": scope})
 
 snapshot = await handle.query("snapshot")
 ```
 
-Signal 전송 후 Event/request ID로 `audit`, `context_requests`, `hitl_history`를 조회해 처리 결과를 확인한다.
+Signal 전송 후 입력 ID로 `audit`, `context_requests`, `hitl_history`, `hitl_resume_commands`를 조회해 처리 결과를 확인한다.
+Signal 전송 성공은 Temporal의 입력 접수다. 엔진의 수락·거절과 새 HITL 생성은 별도로 확인한다.
 API 인증, RPC timeout과 화면 갱신은 백엔드에서 구현한다.
 
 `request_context`는 `request_id`와 비어 있지 않은 중복 없는 `scope` 배열을 받는다.
@@ -463,10 +476,12 @@ Summary 실행 실패 audit는 내부 Agent request_id로 기록되며 외부 Co
 
 | Snapshot 조회 항목 | 프론트·백엔드에서 사용할 내용 |
 |---|---|
-| `state`, `done`, `state_history` | 현재 State·종료 여부·경로 |
+| `state`, `generation`, `done`, `state_history` | 현재 State·진입 세대·종료 여부·경로 |
 | `facts`, `context_version` | 현재 원천 Context와 버전. Agent 입력의 scoped Snapshot과 구분 |
 | `open_hitl` | 열린 결정의 고정 Request·Snapshot·Agent Results |
 | `hitl_history`, `context_requests` | 결정 Request ID별 이력·범위별 구조화 성공 결과 |
+| `hitl_waits` | checkpoint별 보류·재요청 준비 상태, 이전·새 Request ID, 재요청 타이머와 오류 |
+| `hitl_resume_commands` | command_id별 재요청 수락·거절·준비 완료·실패·종료 결과 |
 | `state_specification` | 현재 State의 13개 명세와 자료요건별 실제 Fact·적용 여부·신선도. 명세 형식 Workflow에서 제공 |
 | `effects` | 표시·취소의 Mock receipt 목록. 실제 EHR 화면 반영 결과로 해석하지 않음 |
 | `audit` | 수신·적용·Agent 결과·결정 수락/거절의 처리 기록 |
@@ -478,6 +493,7 @@ RPC별 시간 제한을 설정하고 입력 ID별 audit로 처리 결과를 확�
 |---|---|
 | `submit_event` | `event_id`의 `EVENT_ADMITTED` 이후 `CONTEXT_APPLIED`; 거절/조회 실패는 `EVENT_REJECTED`/`CONTEXT_RESOLUTION_FAILED` |
 | `submit_decision` | `request_id`의 `HITL_DECISION_RECORDED` 또는 `HITL_REJECTED` |
+| `request_hitl_resume` | `command_id`로 `hitl_resume_commands`의 상태·사유 조회; 새 결정은 `open_hitl`에서 확인 |
 
 관련 자료 정정이 처리 중이면 `HITL_DECISION_DEFERRED_FOR_SOURCE` 이후 최종 결정 결과가 기록될 수 있다.
 ID별 수락 결과를 조회하는 구현은 [demo/console.py](demo/console.py)의 `serve_console()`을 참고한다.
@@ -543,7 +559,76 @@ def build_decision(open_record, *, choice, actor, confirmed_items,
 HITL #2의 화면 YES/NO는 `THROMBOLYSIS_YES`/`THROMBOLYSIS_NO` 코드로 보낸다.
 일반 정보 추가는 열린 요청을 유지한다. 참조 근거의 명시적 정정 등으로 요청이 무효화되면
 구 요청의 응답이 거절될 수 있으므로 화면에서도 요청 ID와 상태를 갱신한다.
-`DEFER`/`HOLD`는 현재 State를 유지하며 설정된 타이머 후 재확인을 요청한다.
+`DEFER`/`HOLD` 등 `re_request_hitl_after_min`을 실행하는 결정은 현재 State를 유지하며 보류를 기록한다.
+재확인은 설정된 타이머 만료 또는 의료진의 명시적인 재요청으로 시작한다.
+
+#### 보류 상태와 재요청
+
+프론트엔드는 `snapshot["hitl_waits"][checkpoint]`를 조회해 보류·준비·실패를 표시한다.
+`done`이 false이고 보류 기록의 `state`·`generation`이 Snapshot의 현재 값과 일치하며
+상태가 `WAITING` 또는 `FAILED`이면 재요청 버튼을 제공한다. 종료 또는 State·generation 불일치 시 버튼을 숨긴다.
+`REOPENING`이면 준비 상태를 표시하고, `OPEN`이면 `open_hitl`의 새 요청으로 결정 화면을 연다.
+`CLOSED`이면 해당 보류의 입력을 종료한다. 백엔드와 엔진에서도 대상과 역할을 검증한다.
+대상 ID는 보류 기록의 `prior_request_id`를 사용하고, 역할 선택지는 같은 ID의 `hitl_history` Request에서 조회한다.
+
+백엔드 HTTP 경로는 예를 들어 `POST /episodes/{episode_id}/hitl/{prior_request_id}/resume`으로 구성할 수 있다.
+이는 통합 API의 예시이며 저장소에 구현된 HTTP route는 아니다.
+handler는 로그인 사용자의 기관·환자·내원·Episode 접근 권한을 확인하고,
+백엔드가 보존한 Episode·Workflow ID 매핑으로 handle을 조회한 뒤 다음 Signal을 보낸다.
+
+```python
+from chain_demo.contracts import validate_hitl_resume_shape
+
+resume_command = {
+    "contract_schema": "chain-hitl-resume/v0.3",
+    "command_id": command_id,
+    "prior_request_id": prior_request_id,
+    "actor": {
+        "role": authenticated_actor["role"],
+        "staff_id": authenticated_actor["staff_id"],
+    },
+    "requested_at": requested_at,
+}
+validate_hitl_resume_shape(resume_command)
+await handle.signal("request_hitl_resume", resume_command)
+
+snapshot = await handle.query("snapshot")
+receipt = snapshot.get("hitl_resume_commands", {}).get(command_id)
+```
+
+`command_id`와 `prior_request_id`는 비어 있지 않은 문자열이고, `requested_at`은 시간대가 있는 ISO8601 시각이다.
+요청 시각은 해당 보류의 기록 시각 이후이며 엔진 처리 시각보다 미래일 수 없다.
+`actor`는 백엔드가 인증된 사용자 정보로 구성한다. 허용 역할은 해당 checkpoint와 Policy의 기존 선언을 따른다.
+실제 인증과 로그인 세션은 백엔드의 책임이며 데모의 역할 입력은 인증을 대신하지 않는다.
+
+같은 입력을 재전송할 때는 command_id와 전체 본문을 유지한다. 동일 ID·동일 본문은 최초 처리 결과를 재사용하고,
+동일 ID·다른 본문은 거절한다. 이미 처리한 과거 보류, State가 바뀐 보류, 진행 중 준비에 대한 별도 요청도
+새 HITL을 중복 생성하지 않는다. 입력 결과가 아직 조회되지 않으면 접수 대기로 표시하고 다시 조회한다.
+본문 충돌과 형식 오류의 거절은 `audit`의 `HITL_RESUME_REJECTED`로 확인한다.
+동일 ID의 본문 충돌은 최초 `hitl_resume_commands` 결과를 덮어쓰지 않는다.
+
+| 조회 대상·상태 | 화면과 API에서 해석할 내용 |
+|---|---|
+| `hitl_waits`: `WAITING` | 현재 State에서 보류 중. 타이머 또는 명시적인 재요청을 기다림 |
+| `hitl_waits`: `REOPENING` | 유효한 선행 Agent 결과의 근거로 HITL 준비 중. 추가 준비를 시작하지 않음 |
+| `hitl_waits`: `FAILED` | 준비 실패. 오류 표시 후 새 command_id로 재시도 가능 |
+| `hitl_waits`: `OPEN` / `CLOSED` | 새 HITL 생성 완료 / 보류 종료 |
+| `hitl_resume_commands`: `ACCEPTED` / `REJECTED` | 엔진의 재요청 수락·준비 시작 / 거절. 입력 접수와 구분 |
+| `hitl_resume_commands`: `OPEN` / `FAILED` / `CLOSED` | 새 HITL 생성 완료 / 준비 실패 / 해당 준비·보류 종료 |
+
+보류 기록은 이전 Request ID, State·generation, 타이머 ID, 새 Request ID와 준비 오류를 보존한다.
+조기 재요청 준비 중에는 기존 자동 재요청 타이머를 유지하고, 새 HITL이 정상적으로 열리면 해당 타이머를 취소한다.
+타이머와 사람 요청이 경합해도 한 번만 준비하며, 이전 타이머는 이후의 새 보류를 해제하지 않는다.
+준비 실패 시 유효하지 않은 근거로 HITL을 열지 않는다.
+준비 중 타이머가 만료되어도 준비를 중복 시작하지 않는다. 이후 준비가 실패하면 `FAILED`를 표시하고
+새 command_id의 명시적인 재요청을 기다린다. 만료된 타이머를 자동으로 반복 등록하지 않는다.
+근거는 checkpoint의 `after`가 참조하는 유효한 Agent 결과의 Snapshot을 사용한다.
+동일 Snapshot·scope·구현 버전의 Summary 캐시는 재사용할 수 있으며 재요청마다 전체 Context를 새로 평가하지 않는다.
+참조 근거의 관련 정정 등으로 기존 결과가 무효화된 경우에는 필요한 재평가가 끝난 뒤 질문을 연다.
+
+재요청 버튼은 의료진 결정을 제출하지 않는다. 새 요청이 열리면 새 Request ID·고정 Snapshot을 표시하고,
+의료진이 선택한 응답을 기존 `submit_decision`으로 제출한다. 이전 보류 응답과 근거는 이력으로 남는다.
+화면을 닫는 행위와 데모의 `q`는 Workflow 취소 입력이 아니다.
 
 ## 6. Agent 구현 연결
 
@@ -1520,8 +1605,11 @@ Timer / Exception / Fail-safe:
 
 `after_min`은 분, Agent의 `timeout_s`는 초 단위다. timeout은 `do` 목록을 실행한다.
 자동 전이는 없으며 `repeat`의 기본값은 false다. true이면 같은 State에서 반복 예약한다.
-HOLD/DEFER 재요청 시간은 해당 `HITL_DECISION` 규칙의 `re_request_hitl_after_min`에서 변경한다.
-대기 사유 기록과 재요청 작업은 HITL 결정 규칙에서만 사용할 수 있다.
+보류 재요청 시간은 해당 `HITL_DECISION` 규칙의 `re_request_hitl_after_min`에서 변경한다.
+이 작업이 만든 보류는 공통 `request_hitl_resume` Signal로 타이머 전에 재요청할 수 있다.
+엔진은 State명이나 HOLD/DEFER 문자열로 조기 재요청 대상을 구분하지 않는다.
+일반 Event와 Agent 처리는 계속하지만 명시적인 재요청이나 타이머 없이 보류된 질문을 다시 열지 않는다.
+대기 사유 기록과 재요청 작업의 YAML 선언은 HITL 결정 규칙에서만 사용할 수 있다.
 
 | 지원 작업 | 의미·주요 값 |
 |---|---|
@@ -1531,7 +1619,7 @@ HOLD/DEFER 재요청 시간은 해당 `HITL_DECISION` 규칙의 `re_request_hitl
 | `notify` | 승인 template·CONSOLE/LOG·recipient로 Mock 알림 기록 |
 | `apply_effect` | 승인 operation·resource·target으로 표시 활성화·취소 기록. 8.3절의 계약 사용 |
 | `record_reason`, `record_hold_reason` | HITL_DECISION Route 전용. 의료진 입력 사유 기록. 추가 인자 없음 |
-| `re_request_hitl_after_min` | HITL_DECISION Route 전용. 해당 결정을 설정한 분 뒤 다시 요청 |
+| `re_request_hitl_after_min` | HITL_DECISION Route 전용. 보류·재요청 타이머 등록. 설정한 분 후 또는 명시적인 재요청으로 근거 준비 |
 | `seal_audit_trail` | 감사 기록 종료 요청. 추가 인자 없음 |
 
 작업 목록은 순서대로 시작한다. Agent 완료를 기다리는 의존성은 별도로 선언해야 한다.

@@ -64,7 +64,8 @@ HITL #2의 YES 선택에는 화면에 표시된 네 확인사항을 각각 확�
 |---|---|
 | `docs` | 지금 열린 요청에 고정된 문서 전문 보기 |
 | `json` | 지금 열린 요청의 전체 원문 JSON 보기 |
-| `q` | 결정을 전송하지 않고 데모 입력 종료 |
+| 보류 중 `ready` | 모의 역할·ID를 입력해 같은 HITL의 재요청 전송 |
+| `q` | 결정을 전송하지 않고 데모 입력 종료. Workflow 취소 입력과 구분 |
 
 열린 HITL의 근거는 이후 정보가 추가되어도 그대로 유지된다. 실시간 Event·Agent 결과는 별도로 표시한다.
 입력 중에도 자료와 Agent 응답을 계속 처리한다.
@@ -81,10 +82,29 @@ SQLite의 최종 Mock 표시 상태는 늦게 완료된 이전 활성화 요청�
 추가 임상 전이조건을 자동으로 만들지 않는다. 수정 방법은 [YAML 작성 안내](../README.md#92-state-명세와-yaml)에 있다.
 Summary 준비가 실패하면 HITL이 열리지 않고, 종료 State에서 완료된 Workflow는 후속 Event를 계속 받지 않는다.
 
-## 3. HOLD/DEFER와 타이머 읽기
+## 3. 보류된 HITL과 재요청
 
-HOLD/DEFER 응답이 수락되면 현재 State를 유지하고 재요청 타이머를 기다린다.
-승인이나 경로 종료를 자동으로 선택하지 않는다.
+HOLD/DEFER 응답이 수락되면 현재 State를 유지하고 재요청 타이머를 시작한다.
+타이머가 끝나면 같은 HITL을 다시 준비한다. 의료진이 먼저 결정할 준비가 되면 보류 화면에서 `ready`를 입력한다.
+모의 역할·ID를 확인한 뒤 재요청을 전송하며, 수락·준비 상태와 새 HITL 생성 여부를 화면에 표시한다.
+재요청 자체는 승인이나 경로 종료 결정이 아니다.
+
+```text
+결정 보류 중 · 현재 State 유지
+ready: 지금 다시 결정하기
+q: 콘솔 입력 종료
+```
+
+근거 준비가 끝나면 새 Request ID와 고정 Snapshot으로 결정 화면을 연다.
+checkpoint가 참조하는 유효한 선행 Agent 결과의 Snapshot을 사용하며 같은 입력의 Summary 캐시는 재사용할 수 있다.
+관련 근거의 정정으로 결과가 무효화된 경우에는 필요한 재평가를 먼저 완료한다.
+이전 보류 응답과 근거는 이력에 남는다. 준비 중에는 별도의 준비를 중복 시작하지 않는다.
+Summary 등 근거 준비가 실패하면 오류를 표시하고 유효하지 않은 근거로 질문을 열지 않는다.
+새 HITL이 열리기 전까지 기존 자동 재요청 타이머를 유지하며, 실패 후에는 수동 재요청을 다시 보낼 수 있다.
+준비 중 타이머가 만료되면 준비를 중복 시작하지 않는다. 그 준비도 실패하면 `ready`로 다시 요청한다.
+합성 Agent의 fixture 부재·모호함은 시험 오류로 실행을 종료한다. 보류 화면의 재시도로 성공값을 대체하지 않는다.
+보류·입력·준비 중에도 독립적인 병원 Event와 Agent 응답은 처리한다.
+일반 자료 수신만으로 보류된 질문을 다시 열지 않는다.
 
 타이머에는 진행 막대, 남은 시간, 실행 시계와 원래 설정 시간이 표시된다.
 가상 병원의 시계와 Temporal 타이머의 실제 경과시간은 별개다.
@@ -97,7 +117,9 @@ TIMER | … | ⏱ Temporal Workflow 타이머 · 실제 Temporal 타이머
 
 남은 시간이 0이면 실제 발생을 확인하기 전까지 `만료 처리 대기`로 표시한다.
 조회가 지연되면 남은 시간을 만들어 채우지 않고 `현재 상태 확인 지연`으로 표시한다.
-타이머가 끝나고 새 요청이 열리면 새 Request ID의 근거를 확인해 결정한다.
+타이머 만료와 수동 재요청이 경합해도 새 질문은 하나만 준비한다.
+새 요청이 열리면 해당 보류 타이머를 취소하고 새 Request ID의 근거를 확인해 결정한다.
+다시 보류한 경우 이전 타이머가 새 보류를 해제하지 않는다.
 
 ## 4. 자동으로 전체 경로 확인하기
 
@@ -126,7 +148,7 @@ Service 없이 같은 흐름을 확인하려면 `--backend local`을 사용하�
 | 출력 파일 | 내용 |
 |---|---|
 | `outcome.json` | 실행 성공·실패·중단과 최종 State |
-| `snapshot.json` | 전체 Context, 현재 State 명세·자료요건 표시, State 경로, Agent 결과, HITL 이력, 표시·취소 receipt와 감사 기록 |
+| `snapshot.json` | 전체 Context, 현재 State 명세·자료요건 표시, State 경로, Agent 결과, HITL·보류·재요청 이력, 표시·취소 receipt와 감사 기록 |
 | `manifest.json` | 실행에 고정한 Workflow·Policy·Registry·구현 버전과 데모 설정 |
 | `commands.jsonl` | 실제 요청·응답과 Temporal Activity의 실행 ID·재시도 횟수 |
 | `publications.json`, `simulation.json` | 자료 공개·Event와 실제 관찰한 가상 병원 기준 사건 |
@@ -161,4 +183,10 @@ Temporal 실행은 종료 시 History를 저장하고 Replay한다. 저장한 Hi
 
 실제 통합은 `chain_demo.worker`와 백엔드의 Signal/Query 계약을 사용한다.
 프론트·백엔드에서 이 데모 콘솔을 호출할 필요는 없다.
+`ready`는 공통 재요청 기능의 데모 조작이며, 실제 화면에서는 재요청 버튼을 백엔드 handler에 연결한다.
+handler는 인증된 actor와 이전 보류 Request ID를 담아 `request_hitl_resume` Signal을 보내고,
+`snapshot`의 `hitl_waits`·`hitl_resume_commands`로 수락·준비·오류·새 요청을 조회한다.
+Signal 접수와 엔진 처리 완료를 구분하고, 새 HITL의 실제 결정은 기존 `submit_decision`으로 보낸다.
+입력 계약과 백엔드 호출 예시는 [루트 README 5.3절](../README.md#53-hitl-화면과-응답)에 있다.
+`q`는 데모 입력 종료이며 실제 화면을 닫는 행위도 Workflow 취소와 연결하지 않는다.
 구현할 Agent/API와 연결 위치는 [루트 README](../README.md)에 있다.
